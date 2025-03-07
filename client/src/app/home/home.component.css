@@ -1,0 +1,50 @@
+
+.horas-disponibles {
+    background-color: #8e44ad;
+    border-radius: 20px;
+    padding: 10px;
+    text-align: center;
+    width: 250px;
+  }
+
+  <!-- Horas registros --
+  .horas-card {
+    background-color: #2ca089;
+    color: white;
+    border-radius: 20px;
+    padding: 15px;
+    width: 250px;
+  }
+  
+  .horas-badge {
+    background-color: #c1e3db;
+    color: #2ca089;
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+  
+  .divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    margin: 10px 0;
+  }
+  
+  .dot {
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    border-radius: 50%;
+  }
+  
+  .btn-horas {
+    background-color: #165f52;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  .btn-horas:hover {
+    background-color: #1a6d5e;
+  }
+  

@@ -1,0 +1,16 @@
+
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    padding: 20px;
+    border-radius: 0 105px 35px 0;
+    background: linear-gradient(#142066, #01ACA9);
+  }
+  
+  .profile-pic {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+  }
+
+  

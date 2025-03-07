@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Manguinho\\Hardworker\\Server\\Server.csproj": {}
+    "C:\\Users\\Manguinho\\HardWorker\\HardWorker1.0\\Server\\Server.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Manguinho\\Hardworker\\Server\\Server.csproj": {
+    "C:\\Users\\Manguinho\\HardWorker\\HardWorker1.0\\Server\\Server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Manguinho\\Hardworker\\Server\\Server.csproj",
+        "projectUniqueName": "C:\\Users\\Manguinho\\HardWorker\\HardWorker1.0\\Server\\Server.csproj",
         "projectName": "Server",
-        "projectPath": "C:\\Users\\Manguinho\\Hardworker\\Server\\Server.csproj",
+        "projectPath": "C:\\Users\\Manguinho\\HardWorker\\HardWorker1.0\\Server\\Server.csproj",
         "packagesPath": "C:\\Users\\Manguinho\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Manguinho\\Hardworker\\Server\\obj\\",
+        "outputPath": "C:\\Users\\Manguinho\\HardWorker\\HardWorker1.0\\Server\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Manguinho\\AppData\\Roaming\\NuGet\\NuGet.Config"

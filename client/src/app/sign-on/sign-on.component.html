@@ -1,16 +1,19 @@
-<Div class="d-flex justify-content-center align-items-center vh-100">
-    <div class="border rounded-4 p-5 shadow-lg">
+<Div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="border rounded-4 p-5 w-75 shadow-lg" id="Contenedor-main">
         <form class="d-flex flex-column align-items-center p-5">
-            <h3 class="mb-4">Iniciar Session</h3>
-            <div class="mb-3 w-100 ">
-                <label for="username">Usuario</label>
+            <h3 class="mb-4 text-light">Iniciar Session</h3>
+            <div class="mb-3 w-75 ">
+                <label for="username" class="text-light">Usuario</label>
                 <input class="form-control" type="text" id="username" name="username" required>
             </div>
-            <div class="mb-3 w-100">
-                <label for="Password">Contraseña</label>
+            <div class="mb-3 w-75">
+                <label for="Password" class="text-light">Contraseña</label>
                 <input class="form-control" type="text" id="Password" name="Password" required>
             </div>
-            <button type="submit" class="btn btn-primary">Iniciar Session</button>
+            <div class="mb-3 w-75">
+              <a href="registro" class="link-light">No tienes cuenta?</a>
+            </div>
+            <button type="submit" class="btn btn-light w-25">Iniciar Session</button>
         </form>
     </div>
 </Div>
