@@ -1,13 +1,17 @@
 
+
+using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-
+using Microsoft.EntityFrameworkCore;
+using HardWorker.Data;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -22,29 +26,26 @@ builder.Services.AddSpaStaticFiles(configuration =>
     configuration.RootPath = "client/dist";
 });
 
+// configuration database
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 var app = builder.Build();
 
+app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseDeveloperExceptionPage();
 }
 
 app.UseRouting();
 app.UseCors("AllowAll");
-app.UseSpaStaticFiles();
 
 app.MapControllers();
-
-app.UseSpa(spa =>
-{
-    spa.Options.SourcePath = "client";
-    if (app.Environment.IsDevelopment())
-    {
-        spa.UseProxyToSpaDevelopmentServer("http://localhost:4200");
-    }
-});
-
 
 
 app.Run();
