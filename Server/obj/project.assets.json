@@ -5682,7 +5682,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Manguinho\\.nuget\\packages\\": {}
+    "C:\\Users\\jmorales\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
@@ -5694,7 +5694,7 @@
       "outputPath": "C:\\Users\\Manguinho\\HardWorker\\HardWorker1.0\\Server\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Manguinho\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\jmorales\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -5770,7 +5770,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
   },
