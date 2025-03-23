@@ -1,11 +1,11 @@
 
-
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using HardWorker.Data;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +21,22 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.Authority = "https://localhost:5072";
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured")))
+        };
+    });
+
 builder.Services.AddSpaStaticFiles(configuration =>
 {
     configuration.RootPath = "client/dist";
@@ -42,9 +58,12 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
+
 app.UseRouting();
 app.UseCors("AllowAll");
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 

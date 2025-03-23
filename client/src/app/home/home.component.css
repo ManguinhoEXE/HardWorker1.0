@@ -17,8 +17,8 @@
   }
   
   .horas-badge {
-    background-color: #c1e3db;
-    color: #2ca089;
+    background-color: #ffffff;
+    color: #000000;
     padding: 5px 10px;
     font-size: 14px;
   }
@@ -48,3 +48,8 @@
     background-color: #1a6d5e;
   }
   
+  .no-arrows::-webkit-inner-spin-button,
+.no-arrows::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

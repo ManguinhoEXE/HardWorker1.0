@@ -1,7 +1,7 @@
 
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { Observable } from "rxjs";
+import { Observable, tap } from "rxjs";
 
 
 @Injectable
@@ -19,6 +19,16 @@ export class AuthService {
     }
 
     login(username: string, password: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/iniciarsesion`, { username, password });
+        return this.http.post(`${this.apiUrl}/iniciarsesion`, { username, password }).pipe(
+            tap((response: any) => {
+                const token = response.token;
+                if (token) {
+                    localStorage.setItem('token', token);
+                    console.log('Token almacenado en el local storage');
+                }else{
+                    console.log('No se recibió token');
+                }
+            })
+        );
     }
 }

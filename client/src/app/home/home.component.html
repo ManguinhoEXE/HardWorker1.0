@@ -28,15 +28,16 @@
         <div class="card-body">
           <h5 class="card-title text-center">Registrar Horas</h5>
           <div class="d-flex align-items-center justify-content-center">
-            <span class="badge rounded-pill horas-badge">4</span>
-            <span class="ms-2">Horas</span>
+            <input type="number" [(ngModel)]="hours" class="rounded-pill horas-badge col-2 text-center no-arrows"/>
+          <span class="ms-2">Horas</span>
+          <button (click)="addHour()" class="rounded-pill horas-badge text-center mx-3 text-bg-success"></button>
           </div>
           <hr class="divider" />
           <div class="d-flex justify-content-center">
             <div class="dot"></div>
           </div>
           <div class="mt-3">
-           
+          
             
         </div>
       </div>

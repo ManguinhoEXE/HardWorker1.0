@@ -13,5 +13,17 @@ namespace HardWorker.Data
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<HoursUser> HoursUsers { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<HoursUser>()
+                .HasKey(h => h.Id);
+
+            modelBuilder.Entity<HoursUser>()
+                .HasOne(h => h.User)
+                .WithMany(u => u.Hours)
+                .HasForeignKey(h => h.UserId);
+        }
     }
 }
