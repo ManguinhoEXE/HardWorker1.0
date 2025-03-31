@@ -14,10 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        builder => builder.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy("AllowFrontend",
+    policy => policy.WithOrigins("http://localhost:4200")
+        .AllowCredentials() 
+        .AllowAnyMethod()
+        .AllowAnyHeader());
 });
 
 builder.Services.AddControllers();
@@ -49,7 +50,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 var app = builder.Build();
 
-app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+app.UseCors("AllowFrontend");
+
 
 if (app.Environment.IsDevelopment())
 {
@@ -60,9 +62,6 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseRouting();
-app.UseCors("AllowAll");
-
-app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

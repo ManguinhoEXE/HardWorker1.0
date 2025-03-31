@@ -19,16 +19,9 @@ export class AuthService {
     }
 
     login(username: string, password: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/iniciarsesion`, { username, password }).pipe(
-            tap((response: any) => {
-                const token = response.token;
-                if (token) {
-                    localStorage.setItem('token', token);
-                    console.log('Token almacenado en el local storage');
-                }else{
-                    console.log('No se recibió token');
-                }
-            })
+        return this.http.post(`${this.apiUrl}/iniciarsesion`, 
+        { username, password }, 
+          { withCredentials: true } // ✅ Esto permite que el navegador envíe y reciba cookies
         );
     }
 }

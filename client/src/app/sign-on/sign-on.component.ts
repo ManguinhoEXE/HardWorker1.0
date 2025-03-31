@@ -19,23 +19,30 @@ export class SignOnComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   onSubmit() {
-    this.authService.login(this.username, this.password).subscribe(
-      (response) => {
-        console.log(response);
+    this.authService.login(this.username, this.password).subscribe({
+      next: (response) => {
+        console.log('Respuesta del servidor:', response);
+  
         if (response.success) {
           alert('Inicio de sesión exitoso');
-          this.router.navigate(['/inicio']);
+  
+          // ✅ Limpiar los campos antes de redirigir
+          this.username = ''; 
+          this.password = ''; 
+  
+          // ✅ Redirección después de un breve delay (opcional)
+          setTimeout(() => {
+            this.router.navigate(['/inicio']);
+          }, 500);  
         } else {
           alert('Credenciales incorrectas');
         }
-        this.username = ''; // clean the form
-        this.password = ''; 
       },
-      (error) => {
-        console.log(error);
+      error: (error) => {
+        console.error('Error en el inicio de sesión:', error);
         alert('Ocurrió un error durante el inicio de sesión');
       }
-    );
+    });
   }
-
+  
 }

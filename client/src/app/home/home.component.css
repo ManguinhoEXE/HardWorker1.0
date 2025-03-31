@@ -1,24 +1,46 @@
 
+.card-horas-disponibles{
+  max-height: 300px;
+  height: 100%;
+  width: 100%;
+}
+
 .horas-disponibles {
     background-color: #8e44ad;
-    border-radius: 20px;
     padding: 10px;
     text-align: center;
-    width: 250px;
+    width: 100%;
   }
 
-  <!-- Horas registros --
+
+  .card-solicitar{
+    max-height: 433px;
+    height: 100vh;
+    width: 100%;
+  }
+
+  .horas-badge2 {
+    background-color: rgba(255, 255, 255, 0.5);
+    color: #ffffff;
+    margin-top: 3.8rem;
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+
+  /* <!-- Horas registros --!> */
+
   .horas-card {
     background-color: #2ca089;
     color: white;
     border-radius: 20px;
-    padding: 15px;
-    width: 250px;
+    width: 100%;
+    max-height: 600px;
+    height: 100%;
   }
   
   .horas-badge {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: rgba(255, 255, 255, 0.5);
+    color: #ffffff;
     padding: 5px 10px;
     font-size: 14px;
   }

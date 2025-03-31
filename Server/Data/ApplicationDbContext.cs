@@ -14,6 +14,7 @@ namespace HardWorker.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<HoursUser> HoursUsers { get; set; }
+        public DbSet<Compensatory> Compensatories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

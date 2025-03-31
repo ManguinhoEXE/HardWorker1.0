@@ -2,7 +2,7 @@ using HardWorker.Data;
 using Microsoft.AspNetCore.Mvc;
 using HardWorker.Model;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
+
 
 [Route("api/[controller]")]
 [ApiController]
@@ -17,51 +17,84 @@ public class HoursUserController : ControllerBase
         _context = context;
     }
 
+    [HttpGet("gethours")]
+    public IActionResult GetHours()
+    {
+        // Obetenr UserID desde el token
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" && int.TryParse(c.Value, out _))?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "No se pudo obtener el ID del usuario desde el token." });
+        }
+
+        // Buscar las horas registradas para el usario
+        var hours = _context.HoursUsers.Where(h => h.UserId == userId)
+        .Select(h => new
+        {
+            h.Id,
+            h.Hours,
+            CurrentHour = h.CurrentHour.ToString("MMMM dd, yyyy")
+        })
+        .ToList();
+
+        if (!hours.Any())
+        {
+            return NotFound(new { message = "No se encontraron horas registradas." });
+        }
+
+        return Ok(hours);
+    }
+
     [HttpPost("addhour")]
-public IActionResult AddHours([FromBody] HoursUser hoursUser)
-{
-    // Depuración: Imprime todos los claims disponibles
-    Console.WriteLine("Claims disponibles:");
-    foreach (var claim in User.Claims)
+    public IActionResult AddHours([FromBody] HoursUser hoursUser)
     {
-        Console.WriteLine($"Tipo: {claim.Type}, Valor: {claim.Value}");
+        // Depuración: Imprime todos los claims disponibles
+        Console.WriteLine("Claims disponibles:");
+        foreach (var claim in User.Claims)
+        {
+            Console.WriteLine($"Tipo: {claim.Type}, Valor: {claim.Value}");
+        }
+
+        // Busca "nameid"
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" && int.TryParse(c.Value, out _))?.Value;
+
+        // validacion del claim UserId
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Unauthorized(new { message = "Usuario no autenticado." });
+        }
+
+        // convierte el claim a int
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return BadRequest(new { message = "El ID de usuario en el token no es válido." });
+        }
+
+        var user = _context.Users.Find(userId);
+        if (user == null)
+        {
+            return NotFound(new { message = "Usuario no encontrado." });
+        }
+
+        // Asigna el UserId y el User en el backend
+        hoursUser.CurrentHour = DateTime.Now;
+        hoursUser.UserId = user.Id;
+        hoursUser.User = user;
+
+        if (hoursUser.Hours == null || hoursUser.Hours <= 0)
+        {
+            return BadRequest(new { message = "El número de horas debe ser mayor a 0." });
+        }
+
+        _context.HoursUsers.Add(hoursUser);
+        _context.SaveChanges();
+
+        return Ok(new
+        {
+            message = "Horas añadidas correctamente."
+        });
     }
-
-    // Busca "nameid"
-    var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"&& int.TryParse(c.Value, out _))?.Value;
-
-    // validacion del claim UserId
-    if (string.IsNullOrEmpty(userIdClaim))
-    {
-        return Unauthorized(new { message = "Usuario no autenticado." });
-    }
-
-    // convierte el claim a int
-    if (!int.TryParse(userIdClaim, out var userId))
-    {
-        return BadRequest(new { message = "El ID de usuario en el token no es válido." });
-    }
-
-    var user = _context.Users.Find(userId);
-    if (user == null)
-    {
-        return NotFound(new { message = "Usuario no encontrado." });
-    }
-
-    // Asigna el UserId y el User en el backend
-    hoursUser.UserId = user.Id;
-    hoursUser.User = user;
-
-    if (hoursUser.Hours == null || hoursUser.Hours <= 0)
-    {
-        return BadRequest(new { message = "El número de horas debe ser mayor a 0." });
-    }
-
-    _context.HoursUsers.Add(hoursUser);
-    _context.SaveChanges();
-
-    return Ok(new { message = "Horas añadidas correctamente." });
-}
 
 
 }
