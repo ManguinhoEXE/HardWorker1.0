@@ -3,10 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using HardWorker.Data;
 using HardWorker.Model;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Claims;
+using HardWorker.Controller;
+
 
 
 [Route("api/auth")]
@@ -17,12 +15,14 @@ public class AuthController : ControllerBase
 
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly ValidateJwtToken _validateJwtToken;
 
 
-    public AuthController(ApplicationDbContext context, IConfiguration configuration)
+    public AuthController(ApplicationDbContext context, IConfiguration configuration, ValidateJwtToken validateJwtToken)
     {
         _configuration = configuration;
         _context = context;
+        _validateJwtToken = validateJwtToken;
 
         var jwtSection = _configuration.GetSection("Jwt");
         Console.WriteLine($"JWT Config: {jwtSection.GetChildren().Select(c => $"{c.Key}: {c.Value}").Aggregate((a, b) => $"{a}, {b}")}");
@@ -59,67 +59,19 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "Credenciales inválidas" });
         }
 
-        var token = GeneratedJwtToken(existingUser.Username);
+        var token = _validateJwtToken.GenerateJwtToken(existingUser.Username);
 
-        // Guardar el token en una cookie segura
-        Response.Cookies.Append("AuthToken", token, new CookieOptions
+        var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, 
-            Secure = false,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(30)
-        });
+            HttpOnly = true,  // Evita que el token sea accesible desde JavaScript
+            Secure = false,     // Solo se envía en HTTPS (para producción)
+            SameSite = SameSiteMode.Strict, // Evita ataques CSRF
+            Expires = DateTime.UtcNow.AddHours(1) // Expira en 1 hora
+        };
 
-        return Ok(new { success = true, message = "Sesión iniciada con éxito" });
-    }
+        Response.Cookies.Append("token", token, cookieOptions);
 
-
-    private string GeneratedJwtToken(string username)
-    {
-        var JwtSettings = _configuration.GetSection("Jwt");
-        var keyString = JwtSettings["Key"];
-
-        var issuer = JwtSettings["Issuer"];
-        var audience = JwtSettings["Audience"];
-
-        Console.WriteLine($"Issuer: {issuer}, Audience: {audience}");
-        if (string.IsNullOrEmpty(keyString))
-        {
-            throw new ArgumentNullException("JwtSettings:Key", "JWT key is not configured.");
-        }
-        if (string.IsNullOrEmpty(issuer))
-        {
-            throw new ArgumentNullException("JwtSettings:Issuer", "JWT issuer is not configured.");
-        }
-        if (string.IsNullOrEmpty(audience))
-        {
-            throw new ArgumentNullException("JwtSettings:Audience", "JWT audience is not configured.");
-        }
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        // Obtén el usuario desde la base de datos para incluir su ID en el token
-        var user = _context.Users.FirstOrDefault(u => u.Username == username);
-        if (user == null)
-        {
-            throw new Exception("Usuario no encontrado.");
-        }
-
-        var claims = new[] {
-        new Claim(JwtRegisteredClaimNames.Sub, username),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-    };
-
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return Ok(new { message = "Inicio de sesión exitoso" });
     }
 
 

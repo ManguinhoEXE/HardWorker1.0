@@ -55,6 +55,14 @@ public async Task<IActionResult> requestCompensatory([FromBody] Compensatory com
         // Obtener el userId desde el token
         var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"&& int.TryParse(c.Value, out _))?.Value;
 
+
+        // Obtener el token desde la cookie
+        var token = Request.Cookies["token"];
+        if (string.IsNullOrEmpty(token))
+        {
+            return Unauthorized(new { message = "Usuario no autenticado." });
+        }
+
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized(new { message = "No se pudo obtener el ID del usuario desde el token." });
