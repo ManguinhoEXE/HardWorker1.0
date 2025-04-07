@@ -14,4 +14,9 @@ export class CompensatoryService {
     addRequest(compensatory: any): Observable<any> {
         return this.http.post(`${this.apiUrl}/addrequest`, compensatory, { withCredentials: true });
     }
+
+    //Metodo para obtener las solicitudes de compensatorio
+    getRequests(): Observable<any> {
+        return this.http.get(`${this.apiUrl}/getrequests`, { withCredentials: true });
+    }
 }
