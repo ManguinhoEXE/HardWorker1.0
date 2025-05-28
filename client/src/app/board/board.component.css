@@ -1,0 +1,35 @@
+.table {
+    background-color: #ffffff;
+    border-color: #4DA8DA;
+    /* Fondo blanco */
+    border-radius: 10px;
+    /* Bordes redondeados */
+    overflow: hidden;
+    /* Evita que el contenido sobresalga */
+    margin-right: 100px;
+}
+
+.table th {
+    background-color: #2C3E50;
+    /* Color verde oscuro */
+    color: white;
+    /* Texto blanco */
+    padding: 10px;
+    text-align: left;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+
+.status-active {
+    background-color: green;
+}
+
+.status-pending {
+    background-color: rgb(205, 205, 0);
+}

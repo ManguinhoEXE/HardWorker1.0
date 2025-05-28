@@ -1,5 +1,60 @@
-
-
-#Contenedor-main {
+.container {
     background: linear-gradient(#142066, #01ACA9);
+    height: 100vh;
+    max-width: 4000px;
+    margin: 0;
+    padding: 0;
+}
+
+.container-main {
+    height: 100vh;
+    width: 100%;
+    max-height: 620px;
+    max-width: 1230px;
+}
+
+.container-style {
+    height: 100%;
+    width: 100%;
+    max-height: 580px;
+    margin-left: 10PX;
+    background: linear-gradient(#142066, #01ACA9);
+
+}
+
+
+.form-label {
+    font-weight: bold;
+    color: #333;
+}
+
+.form-control {
+    background-color: #f5f5f5;
+    border: none;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-control:focus {
+    outline: none;
+    box-shadow: 0px 0px 8px rgba(0, 123, 255, 0.5);
+}
+
+.btn-light {
+    background-color: #142066;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.btn-light:hover {
+    background-color: #01ACA9;
+}
+
+a {
+    color: #01ACA9;
+    font-weight: bold;
+}
+
+a:hover {
+    color: #142066;
+    text-decoration: underline;
 }

@@ -19,4 +19,16 @@ export class CompensatoryService {
     getRequests(): Observable<any> {
         return this.http.get(`${this.apiUrl}/getrequests`, { withCredentials: true });
     }
+
+    getAllRequests(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/getallrequests`);
+    }
+
+    acceptRequestComp(id: number): Observable<any> {
+        return this.http.patch(`${this.apiUrl}/accept/${id}`, {}, { withCredentials: true });
+    }
+
+    rejectRequestComp(id: number): Observable<any> {
+        return this.http.patch(`${this.apiUrl}/reject/${id}`, {}, { withCredentials: true });
+    }
 }

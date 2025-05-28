@@ -5,8 +5,8 @@ namespace HardWorker.Model {
     public class Compensatory {
         public int Id { get; set; }
         public int UserId { get; set; }
-        public required DateTime  From { get; set; }
-        public required DateTime To { get; set; }
+        public required DateTimeOffset From { get; set; }
+        public required DateTimeOffset To { get; set; }
 
         public DateTime CurrentHour { get; set; }
 
@@ -14,6 +14,7 @@ namespace HardWorker.Model {
 
         public string? Status { get; set; }
 
+        // Objeto de navegación al usuario asociado
         public User? User { get; set; }
     }
 }

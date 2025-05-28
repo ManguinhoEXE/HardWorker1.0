@@ -378,3 +378,9 @@ C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\Server.pdb
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\Server.genruntimeconfig.cache
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\ref\Server.dll
 C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\Server.staticwebassets.runtime.json
+C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
+C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\MailKit.dll
+C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\MimeKit.dll
+C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\Newtonsoft.Json.dll
+C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\System.Net.WebSockets.WebSocketProtocol.dll

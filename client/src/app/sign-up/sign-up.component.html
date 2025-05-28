@@ -1,18 +1,50 @@
+<div class="container d-flex justify-content-center align-items-center">
+    <div class="container-main rounded-5 shadow bg-white row">
+        <div class="col-6 d-flex justify-content-center align-items-center">
+            <div class="container-style rounded-5 shadow d-flex justify-content-center align-items-center">
+                <img src="icons/logo.png" alt="logo" class="img-fluid h-50 w-50">
+            </div>
+        </div>
+        <div class="col-6 d-flex justify-content-center align-items-center">
+            <div class="d-block">
+                <h2 class="fw-bold text-center">Bienvenido Hardworker</h2>
+                <h5 class="fw-bold text-center">Ingrese sus datos</h5>
 
+                <form class="d-flex flex-column align-items-center justify-content-center"(ngSubmit)="onSubmit()">
+                    <div class="row justify-content-center align-items-center mt-4">
+                        
+                        <div class="col-5 mb-3">
+                            <label for="Username" class="form-label">Usuario</label>
+                            <input type="text" class="form-control rounded-2" name="Username" [(ngModel)]="username" required>
+                        </div>
+                        
+                        <div class="col-5 mb-3">
+                            <label for="Password" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control rounded-2" name="Password" [(ngModel)]="password" required>
+                        </div>
+                        <div class="col-5 mb-3">
+                            <label for="firstname" class="form-label">1er Nombre</label>
+                            <input type="text" class="form-control rounded-2" name="FirstName" [(ngModel)]="firstName" required>
+                        </div>
+                        <div class="col-5 mb-3">
+                            <label for="lastname" class="form-label">1er Apellido</label>
+                            <input type="text" class="form-control rounded-2" name="LastName" [(ngModel)]="lastName" required>
 
-<div class="container d-flex justify-content-center align-items-center vh-100">
-    <div class="border rounded-4 p-5 w-75 shadow-lg" id="Contenedor-main">
-<form class="d-flex flex-column align-items-center p-5" (ngSubmit)="onSubmit()">
-    <h3 class="mb-4 text-light">Registro</h3>
-    <div class="mb-3 w-75 ">
-        <label for="Username" class="text-light">Usuario</label>
-        <input type="text" class="form-control" id="Username" name="Username" [(ngModel)]="username" required>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a routerLink="/iniciarsesion">Ya tienes cuenta?
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Crear -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-light rounded-2 px-5 shadow-sm">Crear</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
     </div>
-    <div class="mb-3 w-75">
-        <label for="Password" class="text-light">Contraseña</label>
-        <input type="password" class="form-control" id="Password" name="Password" [(ngModel)]="password" required>
-    </div>
-    <button type="submit" class="btn btn-light w-25">Registrarse</button>
-</form>
-</div>
 </div>

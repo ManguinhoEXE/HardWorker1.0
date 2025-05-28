@@ -4,42 +4,49 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using HardWorker.Controller;
+using Hardworker.Hubs;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Habilitar Swagger
+// 🛠️ HABILITAR SWAGGER para documentación automática de la API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configurar CORS
+// 📦 HABILITAR SIGNALR para comunicación en tiempo real
+builder.Services.AddSignalR();
+
+
+// 🌐 CONFIGURAR CORS para permitir peticiones desde el frontend Angular
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
-        policy => policy.SetIsOriginAllowed(_ => true)  // Permite cualquier localhost
-            .AllowCredentials()  // Habilitar cookies
+        policy => policy.SetIsOriginAllowed(_ => true)  // Permite cualquier origen (útil en desarrollo)
+            .AllowCredentials()                         // Permite el uso de cookies
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
 
-// Registrar Controladores
+// ✅ REGISTRAR CONTROLADORES
 builder.Services.AddControllers();
 
+// 👂 Permite inyectar HttpContext en cualquier servicio
 builder.Services.AddHttpContextAccessor();
 
-
-// Configurar Autenticación con JWT y Cookies HTTP-Only
+// 🔐 CONFIGURAR AUTENTICACIÓN (JWT y Cookies HTTP-Only)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    // 🧁 Cookies HTTP-only para mantener sesión segura
     .AddCookie(options =>
     {
-        options.Cookie.HttpOnly = true;  // Habilitar cookies HTTP-Only
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // Asegurar que las cookies se envíen solo a través de HTTPS
-        options.Cookie.SameSite = SameSiteMode.Lax;  // Permitir el envío de cookies en solicitudes de terceros
-        options.LoginPath = "/api/auth/iniciarsesion";  // Ruta para iniciar sesión
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Requiere HTTPS en producción
+        options.Cookie.SameSite = SameSiteMode.Lax;              // Permite navegación cruzada con Angular
+        options.LoginPath = "/api/auth/iniciarsesion";          // Ruta de login
     })
-    // Configurar JWT Bearer Authentication
+    // 🔐 JWT Bearer para leer el token desde la cookie
     .AddJwtBearer(options =>
     {
-        options.Authority = "https://localhost:5072";
+        options.Authority = "https://localhost:5072"; // Autoridad del token
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -48,44 +55,68 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] 
-                ?? throw new InvalidOperationException("Jwt:Key is not configured")))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] 
+                ?? throw new InvalidOperationException("Jwt:Key is not configured"))
+            )
         };
 
-        // Leer el Token desde la Cookie
+        // 🎯 Interceptar token desde cookie
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["token"];  // Obtener token desde la cookie
+                context.Token = context.Request.Cookies["token"];
                 return Task.CompletedTask;
             }
         };
     });
 
-// Configurar Base de Datos
+// 🗄️ CONFIGURAR EF CORE con SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+// 🧠 INYECTAR SERVICIO personalizado para generación de JWT
 builder.Services.AddScoped<ValidateJwtToken>();
+
+
+// ✨ CONSTRUIR APP
 var app = builder.Build();
 
-app.UseCors("AllowFrontend");  // ✅ Asegurar que CORS se aplique antes de Routing
-app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });  // ✅ Permitir Cookies
 
 
+// 🛡️ CORS debe aplicarse antes del routing para permitir cookies cross-site
+app.UseCors("AllowFrontend");
 
+// 🍪 Configura política de cookies para toda la app
+app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
+
+// 🚀 CONFIGURACIONES SOLO EN MODO DESARROLLO
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseDeveloperExceptionPage();
+    app.UseSwagger();          // Documentación Swagger
+    app.UseSwaggerUI();        // Interfaz Swagger
+    app.UseDeveloperExceptionPage(); // Página detallada de errores
 }
 
+// 📂 Habilitar archivos estáticos (ej. imágenes subidas)
+app.UseStaticFiles();
+
+// 🚏 Middleware de enrutamiento
 app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
+
+
+app.MapHub<NotificationHub>("/notificationHub");
+
+
+// 🔐 Seguridad
+app.UseAuthentication(); // Leer identidad del usuario desde cookie/token
+app.UseAuthorization();  // Verifica permisos según roles o policies
+
+// 🧭 Mapear rutas a controladores
 app.MapControllers();
+
+// 🏁 Iniciar la aplicación
 app.Run();

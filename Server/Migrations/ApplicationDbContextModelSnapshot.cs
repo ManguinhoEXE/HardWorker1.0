@@ -33,8 +33,8 @@ namespace Server.Migrations
                     b.Property<DateTime>("CurrentHour")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("From")
-                        .HasColumnType("datetime2");
+                    b.Property<DateTimeOffset>("From")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
@@ -42,8 +42,8 @@ namespace Server.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("To")
-                        .HasColumnType("datetime2");
+                    b.Property<DateTimeOffset>("To")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -66,8 +66,14 @@ namespace Server.Migrations
                     b.Property<DateTime>("CurrentHour")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("Hours")
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Hours")
                         .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -87,11 +93,20 @@ namespace Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("FirstName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Token")
+                    b.Property<string>("Profileimage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Username")
