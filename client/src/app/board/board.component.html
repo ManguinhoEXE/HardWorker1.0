@@ -1,40 +1,77 @@
 <!-- Nav -->
-<div class="row justify-content-center align-items-center vh-100">
+<div class="row justify-content-center align-items-center vh-100 board-background">
   <div class="col-3">
-      <app-nav></app-nav>
-    </div>
+    <app-nav></app-nav>
+  </div>
 
-    <div class="col">
-      <div class="d-flex justify-content-center">
-        <table class="table table-striped table-bordered rounded shadow">
-          <thead class="table-dark">
-            <tr>
-              
-              <th>Nombre</th>
-              <th>razon</th>
-              <th>De</th>
-              <th>Hasta</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let request of compensatoryRequests">
-              <td>{{ request.firstName }} {{ request.lastName }}</td>
-              <td>{{ request.reason }}</td>
-              <td>{{ request.from }}</td>
-              <td>{{ request.to }}</td>
-              <td>
-                {{ request.status }}
-                <span 
-                  class="status-indicator" 
-                  [ngClass]="{
-                    'status-active': request.status === 'Activo',
-                    'status-pending': request.status === 'Pendiente'
-                  }">
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  <div class="col board-content-area">
+
+      <!-- Tabla para Compensatorios "En curso" -->
+      <div *ngIf="inProgressRequests.length > 0" class="compensatory-section mb-4">
+        <h3 class="section-title">Compensatorios En Curso</h3>
+        <div class="table-responsive ">
+          <table class="table table-custom ">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Razón</th>
+                <th>De</th>
+                <th>Hasta</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let request of inProgressRequests">
+                <td>{{ request.firstName }} {{ request.lastName }}</td>
+                <td>{{ request.reason }}</td>
+                <td>{{ request.from | date:'dd/MM/yy, hh:mm a' }}</td>
+                <td>{{ request.to | date:'dd/MM/yy, hh:mm a' }}</td>
+                <td>
+                  {{ request.status }}
+                  <span class="status-indicator status-in-progress"></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+      <div *ngIf="!isLoading && !errorMessage && inProgressRequests.length === 0 && (acceptedRequests.length > 0 || allRequests.length === 0)" class="text-center info-message mt-3 mb-3">
+        <p>No hay compensatorios en curso en este momento.</p>
+      </div>
+
+
+      <!-- Tabla para Compensatorios "Aceptada" -->
+      <div *ngIf="acceptedRequests.length > 0" class="compensatory-section mt-4 mb-4">
+        <h3 class="section-title">Próximos Compensatorios</h3>
+        <div class="table-responsive">
+          <table class="table table-custom ">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Razón</th>
+                <th>De</th>
+                <th>Hasta</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let request of acceptedRequests">
+                <td>{{ request.firstName }} {{ request.lastName }}</td>
+                <td>{{ request.reason }}</td>
+                <td>{{ request.from | date:'dd/MM/yy, hh:mm a' }}</td>
+                <td>{{ request.to | date:'dd/MM/yy, hh:mm a' }}</td>
+                <td>
+                  {{ request.status }}
+                  <span class="status-indicator status-accepted"></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div *ngIf="!isLoading && !errorMessage && acceptedRequests.length === 0 && (inProgressRequests.length > 0 || allRequests.length === 0)" class="text-center info-message mt-3 mb-3">
+        <p>No hay próximos compensatorios aceptados.</p>
+      </div>
+
     </div>
+  </div>

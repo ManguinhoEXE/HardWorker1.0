@@ -22,9 +22,19 @@
   object-fit: cover;
 }
 
-/* Fondo de pantalla completo con degradado */
+.active-nav-button {
+  background-color: #FFFFFF !important; /* Fondo completamente blanco */
+  color: #ffffff !important; /* Texto oscuro, usando el azul de tu gradiente para consistencia */
+  font-weight: bold; /* Opcional: hacer el texto más grueso */
+}
 
-/* Estilos de la “tarjeta blanca” */
+.active-nav-button-board {
+  background-color: gray !important; /* Fondo completamente blanco */
+  color: gray !important; /* Texto oscuro, usando el azul de tu gradiente para consistencia */
+  font-weight: bold; /* Opcional: hacer el texto más grueso */
+}
+
+
 .info-card {
   background-color: #ffffff31;
   border: none;
@@ -38,16 +48,13 @@
 }
 
 .info-card {
-  /* ...tus estilos existentes... */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE y Edge */
+  -ms-overflow-style: none;  
 }
 
 .info-card::-webkit-scrollbar {
-  display: none; /* Chrome, Safari y Opera */
+  display: none; 
 }
 
-/* Ajustes de texto*/
 .info-card h5 {
   font-size: 1rem;
 }
@@ -56,7 +63,6 @@
   font-size: 0.75rem;
 }
 
-/* Personalización del scrollbar*/
 .info-card::-webkit-scrollbar {
   width: 7px;
   padding: 10px;

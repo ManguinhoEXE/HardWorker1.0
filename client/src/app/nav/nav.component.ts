@@ -39,7 +39,6 @@ export class NavComponent implements OnInit {
     private AuthService: AuthService,
     private hourService: hourService,
     private compensatoryService: CompensatoryService,
-    private homeComponent: HomeComponent
   ) { }
 
   /**
@@ -155,7 +154,6 @@ export class NavComponent implements OnInit {
         this.successMessage = 'Solicitud de Horas aceptada.';
         this.notifications = this.notifications.filter(n => n.id !== id);
         this.closeModal();
-        this.homeComponent.ngOnInit();
         setTimeout(() => this.successMessage = '', 5000);
       },
       error: err => {

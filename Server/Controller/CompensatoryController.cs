@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 
 [Route("api/[Controller]")]
 [ApiController]
-[Authorize]
 
 public class CompensatoryController : ControllerBase
 {
@@ -159,21 +158,40 @@ public class CompensatoryController : ControllerBase
     [HttpGet("getallrequests")]
     public IActionResult GetCompensatoryRequests()
     {
-        // Consulta combinando usuario y solicitud de compensatorio
-        var compensatoryRequests = (from c in _context.Compensatories
-                                    join u in _context.Users on c.UserId equals u.Id
-                                    select new
-                                    {
-                                        u.FirstName,
-                                        u.LastName,
-                                        c.Reason,
-                                        From = c.From.ToString("dd/MM/yyyy HH:mm"),
-                                        To = c.To.ToString("dd/MM/yyyy HH:mm"),
-                                        c.Status
-                                    }).ToList();
+        var now = DateTime.UtcNow;
 
-        if (!compensatoryRequests.Any())
-            return NotFound(new { message = "No se encontraron solicitudes de compensatorio." });
+        var compensatoryRequests = _context.Compensatories
+            .Include(c => c.User) // Incluir datos del usuario
+            .ToList() // Traer a memoria para calcular estado dinámico
+            .Select(c =>
+            {
+                string dynamicStatus = c.Status;
+                if (c.Status == "Aceptada")
+                {
+                    if (now >= c.From && now < c.To)
+                    {
+                        dynamicStatus = "En curso";
+                    }
+                    else if (now >= c.To)
+                    {
+                        dynamicStatus = "Finalizado";
+                    }
+                }
+                return new
+                {
+                    c.Id,
+                    FirstName = c.User?.FirstName, // Acceso seguro por si User es null
+                    LastName = c.User?.LastName,
+                    c.Reason,
+                    From = c.From, // Enviar como DateTime
+                    To = c.To,     // Enviar como DateTime
+                    Status = dynamicStatus,
+                    c.UserId
+                };
+            })
+            .Where(c => c.Status != "Finalizado") // No mostrar los finalizados
+            .OrderByDescending(c => c.From) // Opcional: ordenar
+            .ToList();
 
         return Ok(compensatoryRequests);
     }
