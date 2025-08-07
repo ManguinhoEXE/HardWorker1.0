@@ -7,9 +7,8 @@
   <!-- ==================== 2. SECCIÓN DE PERFIL ==================== -->
   <div class="profile-image-container">
     <!-- Siempre mostrar imagen, con fallback automático -->
-    <img [src]="profileImage || defaultProfileImage" alt="Profile Image" class="profile-image"
-      (click)="fileInput.click()" (error)="onImageError($event)" />
-    <input type="file" #fileInput (change)="onFileSelected($event)" hidden />
+    <img [src]="profileImage || defaultProfileImage" alt="Profile Image" class="profile-image" />
+    <input type="file" #fileInput hidden />
   </div>
 
   <!-- Nombre del usuario -->
