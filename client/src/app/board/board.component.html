@@ -17,7 +17,7 @@
             <!-- Filtro de usuario -->
             <div class="col-md-2">
               <label for="userFilter" class="form-label">Usuario</label>
-              <input type="text" class="form-control" id="userFilter" [(ngModel)]="userFilter"
+              <input type="text" class="form-control" id="userFilter" [(ngModel)]="userFilter" (input)="applyFilters()"
                 placeholder="Buscar...">
             </div>
             
@@ -48,12 +48,12 @@
             <div class="col-md-3">
               <label for="dateFromFilter" class="form-label">Desde</label>
               <input type="datetime-local" class="form-control" id="dateFromFilter" [(ngModel)]="dateFromFilter"
-                >
+                (change)="applyFilters()">
             </div>
             <div class="col-md-3">
               <label for="dateToFilter" class="form-label">Hasta</label>
               <input type="datetime-local" class="form-control" id="dateToFilter" [(ngModel)]="dateToFilter"
-                >
+                (change)="applyFilters()">
             </div>
           </div>
 
