@@ -1,77 +1,314 @@
-<!-- Nav -->
-<div class="row justify-content-center align-items-center vh-100 board-background">
-  <div class="col-3">
-    <app-nav></app-nav>
-  </div>
+<!-- ==================== 1. ESTRUCTURA PRINCIPAL ==================== -->
+<div class="board-container">  
 
-  <div class="col board-content-area">
+  <!-- Contenido principal -->
+    <!-- ==================== 2. VISTA ADMINISTRADOR ==================== -->
+    <div *ngIf="isAdmin && !isLoading && !errorMessage">
+      <div class="board-content-area">
+        
+        <!-- 2.1 Sección de filtros -->
+        <div class="compensatory-section mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-filter"></i>
+            Filtros de Búsqueda
+          </h3>
 
-      <!-- Tabla para Compensatorios "En curso" -->
-      <div *ngIf="inProgressRequests.length > 0" class="compensatory-section mb-4">
-        <h3 class="section-title">Compensatorios En Curso</h3>
-        <div class="table-responsive ">
-          <table class="table table-custom ">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Razón</th>
-                <th>De</th>
-                <th>Hasta</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let request of inProgressRequests">
-                <td>{{ request.firstName }} {{ request.lastName }}</td>
-                <td>{{ request.reason }}</td>
-                <td>{{ request.from | date:'dd/MM/yy, hh:mm a' }}</td>
-                <td>{{ request.to | date:'dd/MM/yy, hh:mm a' }}</td>
-                <td>
-                  {{ request.status }}
-                  <span class="status-indicator status-in-progress"></span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="row g-3 mb-3">
+            <!-- Filtro de usuario -->
+            <div class="col-md-2">
+              <label for="userFilter" class="form-label">Usuario</label>
+              <input type="text" class="form-control" id="userFilter" [(ngModel)]="userFilter"
+                placeholder="Buscar...">
+            </div>
+            
+            <!-- Filtro de estado -->
+            <div class="col-md-2">
+              <label for="statusFilter" class="form-label">Estado</label>
+              <select class="form-select" id="statusFilter" [(ngModel)]="statusFilter" (change)="applyFilters()">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Aceptada">Aceptada</option>
+                <option value="Rechazada">Rechazada</option>
+              </select>
+            </div>
+            
+            <!-- Filtro de estado dinámico -->
+            <div class="col-md-2">
+              <label for="dynamicStatusFilter" class="form-label">Estado Dinámico</label>
+              <select class="form-select" id="dynamicStatusFilter" [(ngModel)]="dynamicStatusFilter"
+                (change)="applyFilters()">
+                <option value="">Todos</option>
+                <option value="En curso">En curso</option>
+                <option value="Finalizado">Finalizado</option>
+                <option value="Programado">Programado</option>
+              </select>
+            </div>
+            
+            <!-- Filtros de fecha -->
+            <div class="col-md-3">
+              <label for="dateFromFilter" class="form-label">Desde</label>
+              <input type="datetime-local" class="form-control" id="dateFromFilter" [(ngModel)]="dateFromFilter"
+                >
+            </div>
+            <div class="col-md-3">
+              <label for="dateToFilter" class="form-label">Hasta</label>
+              <input type="datetime-local" class="form-control" id="dateToFilter" [(ngModel)]="dateToFilter"
+                >
+            </div>
+          </div>
+
+          <!-- Contador de resultados y botón limpiar -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-white">
+              <i class="fas fa-info-circle"></i>
+              Mostrando {{ filteredRequests.length }} de {{ adminRequests.length }} solicitudes
+            </small>
+            <button type="button" class="btn btn-outline-light bg-light text-black btn-sm" (click)="clearFilters()"
+              title="Limpiar filtros">
+              <i class="fas fa-times"></i>
+              Limpiar
+            </button>
+          </div>
+        </div>
+
+        <!-- 2.2 Tabla de historial completo -->
+        <div class="compensatory-section mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-table"></i>
+            Historial Completo de Compensatorios
+          </h3>
+          
+          <div class="admin-table-container">
+            <table class="table table-admin-custom">
+              <thead>
+                <tr>
+                  <th class="col-id">ID</th>
+                  <th class="col-usuario">Usuario</th>
+                  <th class="col-razon">Razón</th>
+                  <th class="col-fecha">Fecha Inicio</th>
+                  <th class="col-fecha">Fecha Fin</th>
+                  <th class="col-fecha">Fecha Solicitud</th>
+                  <th class="col-horas">Horas</th>
+                  <th class="col-estado">Estado</th>
+                  <th class="col-estado-dinamico">Estado Dinámico</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let request of filteredRequests; trackBy: trackByRequestId">
+                  <td class="col-id">{{ request.id }}</td>
+                  <!-- Info de usuario -->
+                  <td class="col-usuario">
+                    <div class="user-info">
+                      <strong>{{ request.firstName }}</strong>
+                      <br>
+                      <span class="text-muted">{{ request.lastName }}</span>
+                    </div>
+                  </td>
+                  <!-- Razón con truncado -->
+                  <td class="col-razon">
+                    <div class="reason-cell" [title]="request.reason">
+                      {{ request.reason.length > 60 ? (request.reason | slice:0:60) + '...' : request.reason }}
+                    </div>
+                  </td>
+                  <!-- Fechas formateadas -->
+                  <td class="col-fecha">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.from | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.from | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <td class="col-fecha">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.to | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.to | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <td class="col-fecha">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.currentHour | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.currentHour | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <!-- Horas solicitadas -->
+                  <td class="col-horas">
+                    <span class="hours-badge">{{ request.hoursRequested | number:'1.1-1' }}h</span>
+                  </td>
+                  <!-- Estado de aprobación -->
+                  <td class="col-estado">
+                    <div class="status-container">
+                      <span class="status-badge" [ngClass]="{
+                        'status-accepted': request.status === 'Aceptada',
+                        'status-in-progress': request.status === 'En curso',
+                        'status-pending': request.status === 'Pendiente',
+                        'status-rejected': request.status === 'Rechazada'
+                      }">
+                        {{ request.status }}
+                      </span>
+                    </div>
+                  </td>
+                  <!-- Estado dinámico -->
+                  <td class="col-estado-dinamico">
+                    <div class="status-container">
+                      <span class="status-badge" [ngClass]="{
+                        'status-in-progress': request.dynamicStatus === 'En curso',
+                        'status-finished': request.dynamicStatus === 'Finalizado',
+                        'status-accepted': request.dynamicStatus === 'Programado'
+                      }">
+                        {{ request.dynamicStatus }}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mensaje sin resultados -->
+          <div *ngIf="filteredRequests.length === 0" class="text-center info-message mt-3 mb-3">
+            <i class="fas fa-search fa-2x mb-2"></i>
+            <p>No se encontraron solicitudes con los filtros aplicados</p>
+          </div>
         </div>
       </div>
-      <div *ngIf="!isLoading && !errorMessage && inProgressRequests.length === 0 && (acceptedRequests.length > 0 || allRequests.length === 0)" class="text-center info-message mt-3 mb-3">
-        <p>No hay compensatorios en curso en este momento.</p>
-      </div>
+    </div>
 
+    <!-- ==================== 3. VISTA USUARIO ==================== -->
+    <div *ngIf="!isAdmin && !isLoading && !errorMessage">
+      <div class="board-content-area">
+        
+        <!-- 3.1 Compensatorios en curso -->
+        <div *ngIf="inProgressRequests.length > 0" class="compensatory-section mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-clock"></i>
+            Compensatorios En Curso
+          </h3>
 
-      <!-- Tabla para Compensatorios "Aceptada" -->
-      <div *ngIf="acceptedRequests.length > 0" class="compensatory-section mt-4 mb-4">
-        <h3 class="section-title">Próximos Compensatorios</h3>
-        <div class="table-responsive">
-          <table class="table table-custom ">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Razón</th>
-                <th>De</th>
-                <th>Hasta</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let request of acceptedRequests">
-                <td>{{ request.firstName }} {{ request.lastName }}</td>
-                <td>{{ request.reason }}</td>
-                <td>{{ request.from | date:'dd/MM/yy, hh:mm a' }}</td>
-                <td>{{ request.to | date:'dd/MM/yy, hh:mm a' }}</td>
-                <td>
-                  {{ request.status }}
-                  <span class="status-indicator status-accepted"></span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="user-table-container">
+            <table class="table table-user-custom">
+              <thead>
+                <tr>
+                  <th class="col-user-nombre">Nombre</th>
+                  <th class="col-user-razon">Razón</th>
+                  <th class="col-user-de">De</th>
+                  <th class="col-user-hasta">Hasta</th>
+                  <th class="col-user-estado">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let request of inProgressRequests">
+                  <!-- Info de usuario -->
+                  <td class="col-user-nombre">
+                    <div class="user-info">
+                      <strong>{{ request.firstName }}</strong>
+                      <br>
+                      <span class="text-muted">{{ request.lastName }}</span>
+                    </div>
+                  </td>
+                  <!-- Razón con truncado -->
+                  <td class="col-user-razon">
+                    <div class="reason-cell" [title]="request.reason">
+                      {{ request.reason.length > 40 ? (request.reason | slice:0:40) + '...' : request.reason }}
+                    </div>
+                  </td>
+                  <!-- Fechas formateadas -->
+                  <td class="col-user-de">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.from | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.from | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <td class="col-user-hasta">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.to | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.to | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <!-- Estado En Curso -->
+                  <td class="col-user-estado">
+                    <div class="status-container">
+                      <span class="status-badge status-in-progress">En Curso</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mensaje sin compensatorios en curso -->
+        <div
+          *ngIf="!isLoading && !errorMessage && inProgressRequests.length === 0 && (acceptedRequests.length > 0 || allRequests.length === 0)"
+          class="text-center info-message mt-3 mb-3">
+          <i class="fas fa-info-circle fa-2x mb-2"></i>
+          <p>No hay compensatorios en curso en este momento.</p>
+        </div>
+
+        <!-- 3.2 Próximos compensatorios -->
+        <div *ngIf="acceptedRequests.length > 0" class="compensatory-section mt-4 mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-calendar-check"></i>
+            Próximos Compensatorios
+          </h3>
+
+          <div class="user-table-container">
+            <table class="table table-user-custom">
+              <thead>
+                <tr>
+                  <th class="col-user-nombre">Nombre</th>
+                  <th class="col-user-razon">Razón</th>
+                  <th class="col-user-de">De</th>
+                  <th class="col-user-hasta">Hasta</th>
+                  <th class="col-user-estado">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let request of acceptedRequests">
+                  <!-- Info de usuario -->
+                  <td class="col-user-nombre">
+                    <div class="user-info">
+                      <strong>{{ request.firstName }}</strong>
+                      <br>
+                      <span class="text-muted">{{ request.lastName }}</span>
+                    </div>
+                  </td>
+                  <!-- Razón con truncado -->
+                  <td class="col-user-razon">
+                    <div class="reason-cell" [title]="request.reason">
+                      {{ request.reason.length > 40 ? (request.reason | slice:0:40) + '...' : request.reason }}
+                    </div>
+                  </td>
+                  <!-- Fechas formateadas -->
+                  <td class="col-user-de">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.from | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.from | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <td class="col-user-hasta">
+                    <div class="date-info">
+                      <div class="date-main">{{ request.to | date:'dd/MM/yyyy' }}</div>
+                      <div class="date-time">{{ request.to | date:'h:mm a' }}</div>
+                    </div>
+                  </td>
+                  <!-- Estado Programado -->
+                  <td class="col-user-estado">
+                    <div class="status-container">
+                      <span class="status-badge status-accepted">Programado</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mensaje sin próximos compensatorios -->
+        <div
+          *ngIf="!isLoading && !errorMessage && acceptedRequests.length === 0 && (inProgressRequests.length > 0 || allRequests.length === 0)"
+          class="text-center info-message mt-3 mb-3">
+          <i class="fas fa-calendar-times fa-2x mb-2"></i>
+          <p>No hay próximos compensatorios aceptados.</p>
         </div>
       </div>
-      <div *ngIf="!isLoading && !errorMessage && acceptedRequests.length === 0 && (inProgressRequests.length > 0 || allRequests.length === 0)" class="text-center info-message mt-3 mb-3">
-        <p>No hay próximos compensatorios aceptados.</p>
-      </div>
-
     </div>
   </div>

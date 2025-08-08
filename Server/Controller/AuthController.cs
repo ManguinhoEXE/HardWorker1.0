@@ -4,57 +4,74 @@ using HardWorker.Model;
 using Microsoft.EntityFrameworkCore;
 using HardWorker.Controller;
 
+
+/// ==================== 1. CONFIGURACIÓN DEL CONTROLADOR ====================
+
 [Route("api/auth")]
 [ApiController]
 public class AuthController : ControllerBase
 {
+    
+    /// ==================== 2. PROPIEDADES Y DEPENDENCIAS ====================
+    
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ValidateJwtToken _validateJwtToken;
 
+    
+    /// ==================== 3. CONSTRUCTOR E INICIALIZACIÓN ====================
+    
     public AuthController(ApplicationDbContext context, IConfiguration configuration, ValidateJwtToken validateJwtToken)
     {
         _configuration = configuration;
         _context = context;
         _validateJwtToken = validateJwtToken;
 
-        // (Debug) Imprime la configuración JWT al iniciar
+        // Debug: Mostrar configuración JWT en consola
         var jwtSection = _configuration.GetSection("Jwt");
         Console.WriteLine($"JWT Config: {jwtSection.GetChildren().Select(c => $"{c.Key}: {c.Value}").Aggregate((a, b) => $"{a}, {b}")}");
     }
 
-    // Registra un nuevo usuario en el sistema.
+
+    /// ==================== 4. ENDPOINTS DE AUTENTICACIÓN ====================
+    
+
+    
+    /// Registra un nuevo usuario en el sistema
+    
     [HttpPost("registro")]
-    public async Task<IActionResult> register([FromBody] User user)
+    public async Task<IActionResult> Register([FromBody] User user)
     {
-        // Validación básica de entrada
+        // Validación de entrada
         if (user == null || string.IsNullOrWhiteSpace(user.Username) || string.IsNullOrWhiteSpace(user.Password))
         {
             return BadRequest(new { message = "Datos inválidos" });
         }
 
-        // Crear nuevo usuario con contraseña hasheada
+        // Crear nuevo usuario con contraseña encriptada
         var newUser = new User
         {
             Username = user.Username,
-            Password = BCrypt.Net.BCrypt.HashPassword(user.Password), // Hashea la contraseña
+            Password = BCrypt.Net.BCrypt.HashPassword(user.Password),
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Profileimage = "wwwroot/uploads/descarga.png",
             Role = "User"
         };
 
+        // Guardar en base de datos
         _context.Users.Add(newUser);
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Usuario registrado con éxito" });
     }
 
-    // Autentica al usuario, genera un JWT y lo guarda en una cookie segura.  /// </summary>
+
+    /// Autentica un usuario y genera token JWT
+    
     [HttpPost("iniciarsesion")]
     public async Task<IActionResult> Login([FromBody] User user)
     {
-        // Verificar existencia del usuario
+        // Buscar usuario en base de datos
         var existingUser = await _context.Users
             .FirstOrDefaultAsync(u => u.Username == user.Username);
 
@@ -67,26 +84,36 @@ public class AuthController : ControllerBase
         // Generar token JWT
         var token = _validateJwtToken.GenerateJwtToken(existingUser.Username);
 
-        // Configuración de cookie segura
+        // Configurar cookie con token
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, // Protege contra ataques XSS
-            Secure = false,  // En producción, usar true para HTTPS
-            SameSite = SameSiteMode.Strict, // Evita CSRF
-            Expires = DateTime.UtcNow.AddHours(1) // Expira en 1 hora
+            HttpOnly = true,
+            Secure = false,  // TODO: Cambiar a true en producción (HTTPS)
+            SameSite = SameSiteMode.Strict, 
+            Expires = DateTime.UtcNow.AddHours(1)
         };
 
-        // Guardar token en cookie
         Response.Cookies.Append("token", token, cookieOptions);
 
-        return Ok(new { message = "Inicio de sesión exitoso" });
+        // Retornar respuesta exitosa con datos del usuario
+        return Ok(new { 
+            message = "Inicio de sesión exitoso",
+            user = new {
+                id = existingUser.Id,
+                username = existingUser.Username,
+                firstName = existingUser.FirstName,
+                lastName = existingUser.LastName,
+                role = existingUser.Role ?? "User"
+            } 
+        });
     }
 
-    // Cierra la sesión del usuario eliminando la cookie del token.
+    
+    /// Cierra la sesión del usuario eliminando la cookie
+    
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        // Elimina la cookie de autenticación
         Response.Cookies.Delete("token");
         return Ok(new { message = "Sesión cerrada" });
     }

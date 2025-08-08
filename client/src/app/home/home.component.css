@@ -1,55 +1,408 @@
+/* ==================== 1. ESTILOS GENERALES ==================== */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  margin: 10px 0;
+}
+
+input::placeholder {
+  color: white;
+}
+
+.no-arrows::-webkit-inner-spin-button,
+.no-arrows::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.home-container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.admin-section {
+  width: 100%;
+}
+
+.user-section {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+.user-left-column {
+  flex: 2; /* Ocupa más espacio */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.user-right-column {
+  flex: 1; /* Ocupa menos espacio */
+  min-width: 400px;
+  min-height: 600px;
+
+}
+
+.user-hours-available {
+  display: flex;
+  justify-content: center;
+}
+
+/* ==================== 2. VISTA DE ADMINISTRADOR ==================== */
+/* Cards principales de administrador */
+.admin-users-card {
+  background: linear-gradient(100deg, #8e44ad 0%, #3f2b96 70%);
+  border: none;
+  height: calc(100vh - 50px);
+}
+
+.admin-stats-card {
+  background-color: #2ca089;
+  border: none;
+  height: calc(100vh - 50px);
+}
+
+/* Contenedores con scroll */
+.users-scroll-container, .stats-scroll-container {
+  max-height: calc(100vh - 158px);
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Cards de usuarios */
+.user-card-admin {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card-admin:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 1);
+}
+
+.user-card-admin:active {
+  transform: scale(0.98);
+}
+
+.user-card-admin::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.user-card-admin:hover::after {
+  opacity: 1;
+}
+
+.user-card-admin.selected {
+  background: #f8f9fa;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Avatar de usuario */
+.user-avatar-admin {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #142066);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.user-avatar-admin img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-avatar-admin i {
+  color: white;
+  font-size: 20px;
+}
+
+/* Información de usuario */
+.user-info-admin {
+  flex: 1;
+}
+
+.user-name-admin {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.user-role-admin {
+  font-size: 12px;
+  color: #718096;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.user-role-admin.admin-role {
+  color: #e53e3e;
+  font-weight: 600;
+}
+
+.user-stats-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-item-admin {
+  font-size: 11px;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+}
+
+.stat-item-admin i {
+  margin-right: 6px;
+  width: 12px;
+}
+
+.stat-item-admin.pending {
+  color: #e53e3e;
+  font-weight: 600;
+}
+
+/* ==================== 3. TARJETAS DE ESTADÍSTICAS ==================== */
+.stat-card-admin {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.stat-card-admin:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon-admin {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  font-size: 24px;
+}
+
+.stat-content-admin h4 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.stat-content-admin p {
+  margin: 0;
+  font-size: 14px;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.stat-content-admin small {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* Colores específicos para cada tipo de estadística */
+.users-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.hours-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+}
+
+.requests-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white;
+}
+
+.pending-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #fa709a, #fee140);
+  color: white;
+}
+
+.active-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #a8edea, #fed6e3);
+  color: #2d3748;
+}
+
+.used-hours-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #d299c2, #fef9d7);
+  color: #2d3748;
+}
+
+.rejected-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #ff9a9e, #fecfef);
+  color: #e53e3e;
+}
+
+.finished-stat-admin .stat-icon-admin {
+  background: linear-gradient(135deg, #a8edea, #c5f9d7);
+  color: #38a169;
+}
+
+/* ==================== 4. SCROLLBARS PERSONALIZADOS ==================== */
+/* Scroll bars para admin */
+.users-scroll-container::-webkit-scrollbar,
+.stats-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.users-scroll-container::-webkit-scrollbar-track {
+  background-color: #3f2b96;
+  border-radius: 3px;
+}
+
+.stats-scroll-container::-webkit-scrollbar-track {
+  background-color: #2ca089;
+  border-radius: 3px;
+}
+
+.users-scroll-container::-webkit-scrollbar-thumb,
+.stats-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+}
+
+.users-scroll-container::-webkit-scrollbar-thumb:hover,
+.stats-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Scroll para modal */
+.user-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.user-modal-content::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 4px;
+}
+
+.user-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #0056b3;
+}
+
+/* Scroll para historias */
+.history::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history::-webkit-scrollbar-thumb {
+  background-color: #165f52;
+  border-radius: 4px;
+}
+
+.history::-webkit-scrollbar-thumb:hover {
+  background-color: #1a6d5e;
+}
+
+.history::-webkit-scrollbar-track {
+  background-color: #2ca089;
+}
+
+.historys::-webkit-scrollbar {
+  width: 8px;
+}
+
+.historys::-webkit-scrollbar-thumb {
+  background-color: #2b42c7;
+  border-radius: 4px;
+}
+
+.historys::-webkit-scrollbar-thumb:hover {
+  background-color: #202d76;
+}
+
+.historys::-webkit-scrollbar-track {
+  background-color: #142066;
+}
+
+/* ==================== 5. VISTA DE USUARIO REGULAR ==================== */
+/* Panel de horas disponibles */
 .card-horas-disponibles {
   max-height: 300px;
-  max-width: 503px;
   height: 100%;
-  width: 100%;
 }
 
 .horas-disponibles {
   background-color: #8e44ad;
   padding: 10px;
   text-align: center;
-  width: 100%;
+  width: 90%;
 }
 
-
+/* Panel de solicitudes */
 .card-solicitar {
-  max-height: 460px;
-  max-width: 503px;
+  max-height: 470px;
+  max-width: 600px;
   height: 100vh;
   width: 100%;
   background-color: #142066;
 }
 
 .historys {
-  max-height: 170px;
+  max-height: 200px;
   max-width: 90%;
   margin: 0 auto;
   overflow-y: auto;
   padding: 10px;
-}
-
-/* Personalización del scrollbar */
-.historys::-webkit-scrollbar {
-  width: 8px;
-  /* Ancho del scroll */
-}
-
-.historys::-webkit-scrollbar-thumb {
-  background-color: #2b42c7;
-  /* Color verde oscuro */
-  border-radius: 4px;
-  /* Bordes redondeados */
-}
-
-.historys::-webkit-scrollbar-thumb:hover {
-  background-color: #202d76;
-  /* Color más claro al pasar el mouse */
-}
-
-.historys::-webkit-scrollbar-track {
-  background-color: #142066;
-  /* Color del fondo del track */
 }
 
 .card-history-solicitar {
@@ -64,6 +417,37 @@
   font-size: 12px;
 }
 
+/* Registro de horas */
+.horas-card {
+  background-color: #2ca089;
+  color: white;
+  border-radius: 20px;
+  width: 100%;
+  min-height: 600px;
+  height: 100%;
+  
+}
+
+.history {
+  max-height: 360px;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.card-history {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+/* ==================== 6. COMPONENTES DE INTERFAZ ==================== */
+/* Badges y botones */
+.horas-badge {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  padding: 5px 10px;
+  font-size: 14px;
+}
 
 .horas-badge2 {
   background-color: rgba(255, 255, 255, 0.5);
@@ -73,93 +457,12 @@
   font-size: 14px;
 }
 
-/* <!-- Horas registros --!> */
-
-.horas-card {
-  background-color: #2ca089;
-  color: white;
-  border-radius: 20px;
-  width: 100%;
-  max-height: 600px;
-  height: 100%;
-}
-
-.horas-badge {
-  background-color: rgba(255, 255, 255, 0.5);
-  color: #ffffff;
-  padding: 5px 10px;
-  font-size: 14px;
-}
-
-input::placeholder {
-  color: white;
-}
-
-.divider {
-  border-top: 1px solid rgba(255, 255, 255, 0.5);
-  margin: 10px 0;
-}
-
-
-.btn-horas {
-  background-color: #165f52;
-  color: white;
-  border-radius: 10px;
-  border: none;
-  padding: 8px;
-  font-size: 14px;
-}
-
-.btn-horas:hover {
-  background-color: #1a6d5e;
-}
-
-.no-arrows::-webkit-inner-spin-button,
-.no-arrows::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.history {
-  max-height: 330px;
-  height: 100%;
-  width: 100%;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-/* Personalización del scrollbar */
-.history::-webkit-scrollbar {
-  width: 8px;
-  /* Ancho del scroll */
-}
-
-.history::-webkit-scrollbar-thumb {
-  background-color: #165f52;
-  /* Color verde oscuro */
-  border-radius: 4px;
-  /* Bordes redondeados */
-}
-
-.history::-webkit-scrollbar-thumb:hover {
-  background-color: #1a6d5e;
-  /* Color más claro al pasar el mouse */
-}
-
-.history::-webkit-scrollbar-track {
-  background-color: #2ca089;
-  /* Color del fondo del track */
-}
-
-.card-history {
-  background-color: rgba(0, 0, 0, 0.45);
-}
-
 .form-date {
   width: 100%;
   max-width: 210px;
 }
 
+/* Indicadores de estado */
 .status-dot {
   position: relative;
   top: 0.05rem;
@@ -186,10 +489,10 @@ input::placeholder {
   color: rgb(226, 226, 200);
   top: 0.05rem;
   left: 1rem;
-  
 }
 
-
+/* ==================== 7. MODALES Y NOTIFICACIONES ==================== */
+/* Modal de notificación */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -210,56 +513,264 @@ input::placeholder {
   max-width: 350px;
   max-height: 330px;
   height: 100%;
-  box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.2);
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
 .modal-header-custom {
   display: flex;
-  flex-direction: column; /* Para centrar icono y título verticalmente */
-  align-items: center; /* Centra horizontalmente */
-  justify-content: center; /* Centra verticalmente */
-  padding: 0.7rem; /* Más padding */
-  border-bottom: none; /* Quitar borde si el color de fondo es suficiente */
-  position: relative; /* Para el botón de cerrar absoluto */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem;
+  border-bottom: none;
+  position: relative;
 }
 
 .modal-icon-container {
-  font-size: 4rem; /* Icono más grande */
+  font-size: 4rem;
   margin-bottom: 0.3rem;
 }
 
 .modal-title-custom {
-  font-weight: 500; /* Un poco menos bold si el bg es fuerte */
-  width: 100%; /* Asegura que el text-align:center del padre funcione */
+  font-weight: 500;
+  width: 100%;
   text-align: center;
 }
 
 .modal-body-custom {
-  padding: 1.5rem; /* Más padding */
-  text-align: center; /* Centrar el mensaje */
-  font-size: 1.05rem; /* Ligeramente más grande el texto del mensaje */
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 1.05rem;
 }
 
 .modal-ok-button {
-  padding: 0.5rem 1.5rem; /* Botón un poco más grande */
+  padding: 0.5rem 1.5rem;
   font-weight: 500;
   transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
 
-.btn-success:hover {
-  background-color: #198754; 
-  color:#198754 ;
-  border: none;
-}
-.btn-danger:hover {
-  background-color: #dc3545; 
-  color:#dc3545 ;
-}
-.btn-info:hover {
-  background-color: #17a2b8; 
-  color:#17a2b8 ;
-}
 .modal-ok-button:active {
-  transform: scale(0.98); /* Efecto ligero al presionar */
+  transform: scale(0.98);
+}
+
+/* Modal de detalles de usuario */
+.user-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+  overflow: hidden;
+  backdrop-filter: blur(5px);
+}
+
+.user-modal-container {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  border-radius: 10px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  margin: 20px auto;
+  padding-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.user-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-modal-content {
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.947);
+}
+
+.user-modal-footer {
+  padding: 15px;
+  text-align: right;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Elementos de carga */
+.user-preview-loading {
+  text-align: center;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.user-modal-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-modal-container::-webkit-scrollbar-track {
+  background: #f1f1f105;
+  border-radius: 0px;
+}
+
+.user-modal-container::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 4px;
+}
+
+.user-modal-container::-webkit-scrollbar-thumb:hover {
+  background: #0056b3;
+}
+
+/* ==================== 8. COMPONENTES DEL MODAL DE USUARIO ==================== */
+/* Modo solo lectura */
+.modal-readonly {
+  opacity: 0.9;
+  position: relative;
+}
+
+.modal-readonly::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Contenedores con altura máxima */
+.max-height-300, .max-height-Hours {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+/* Estadísticas en modal */
+.user-stats-summary {
+  padding: 1.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2rem 1.5rem;
+}
+
+.stat-mini-card {
+  border-radius: 12px;
+  padding: 1rem;
+  color: white;
+  height: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Colores específicos para cada tarjeta */
+.stat-mini-card:nth-child(1) {
+  background: linear-gradient(145deg, #394a75, #059669);
+}
+
+.stat-mini-card:nth-child(2) {
+  background: linear-gradient(145deg, #10b981, #059669);
+}
+
+.stat-mini-card:nth-child(3) {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+}
+
+.stat-mini-card:nth-child(4) {
+  background: linear-gradient(145deg, #3b82f6, #2563eb);
+}
+
+.stat-mini-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tarjetas específicas para la vista modal */
+.card-solicitarM {
+  max-height: 460px;
+  max-width: 503px;
+  height: 100vh;
+  width: 100%;
+  background-color: #142066;
+}
+
+.horas-cardM {
+  background-color: #2ca089;
+  color: white;
+  border-radius: 20px;
+  width: 100%;
+  max-height: 600px;
+  height: 100%;
+}
+
+/* ==================== 9. BÚSQUEDA Y FILTROS ==================== */
+.search-container {
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+
+.search-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.search-input:focus {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.input-group-text {
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Mensaje de no resultados */
+.no-results-message {
+  text-align: center;
+  padding: 30px 15px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.no-results-message i {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+.no-results-message p {
+  margin: 0;
 }

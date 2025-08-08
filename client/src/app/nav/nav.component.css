@@ -1,3 +1,4 @@
+/* ==================== 1. ESTRUCTURA PRINCIPAL ==================== */
 .sidebar {
   width: 250px;
   height: 100vh;
@@ -6,6 +7,7 @@
   background: linear-gradient(#142066, #01ACA9);
 }
 
+/* ==================== 2. ELEMENTOS DE PERFIL ==================== */
 .profile-image-container {
   margin-top: 3rem;
   position: relative;
@@ -22,19 +24,20 @@
   object-fit: cover;
 }
 
+/* ==================== 3. NAVEGACIÓN ==================== */
 .active-nav-button {
-  background-color: #FFFFFF !important; /* Fondo completamente blanco */
-  color: #ffffff !important; /* Texto oscuro, usando el azul de tu gradiente para consistencia */
-  font-weight: bold; /* Opcional: hacer el texto más grueso */
+  background-color: #FFFFFF !important;
+  color: #ffffff !important;
+  font-weight: bold;
 }
 
 .active-nav-button-board {
-  background-color: gray !important; /* Fondo completamente blanco */
-  color: gray !important; /* Texto oscuro, usando el azul de tu gradiente para consistencia */
-  font-weight: bold; /* Opcional: hacer el texto más grueso */
+  background-color: gray !important; 
+  color: gray !important;
+  font-weight: bold;
 }
 
-
+/* ==================== 4. TARJETAS DE INFORMACIÓN ==================== */
 .info-card {
   background-color: #ffffff31;
   border: none;
@@ -44,15 +47,7 @@
   max-height: 290px;
   height: 100vh;
   overflow-y: auto;
-
-}
-
-.info-card {
-  -ms-overflow-style: none;  
-}
-
-.info-card::-webkit-scrollbar {
-  display: none; 
+  -ms-overflow-style: none;  /* Oculta scrollbar en IE y Edge */
 }
 
 .info-card h5 {
@@ -63,9 +58,12 @@
   font-size: 0.75rem;
 }
 
+/* ==================== 5. PERSONALIZACIÓN DE SCROLLBAR ==================== */
+/* Oculta scrollbar pero mantiene funcionalidad */
 .info-card::-webkit-scrollbar {
   width: 7px;
   padding: 10px;
+  display: none; /* Oculta visualmente */
 } 
 
 .info-card::-webkit-scrollbar-thumb {
@@ -73,6 +71,7 @@
   border-radius: 30px;
 }
 
+/* ==================== 6. ELEMENTOS DE NOTIFICACIÓN ==================== */
 .notifacation-card {
   position: relative;
   padding-left: 1.5rem;
@@ -94,8 +93,7 @@
   vertical-align: middle;
 }
 
-
-
+/* ==================== 7. MODAL ==================== */
 .custom-modal-backdrop {
   position: fixed;
   top: 0;
@@ -131,16 +129,14 @@
   cursor: pointer;
 }
 
-.accept-btn:hover {
-  color: transparent;
-}
-.accept-btn:hover::after {
-  content: "";
-}
-
+/* ==================== 8. ESTILOS DE BOTONES ==================== */
+/* Comportamiento de hover común para botones de aceptar y rechazar */
+.accept-btn:hover,
 .reject-btn:hover {
   color: transparent;
 }
+
+.accept-btn:hover::after,
 .reject-btn:hover::after {
   content: "";
 }

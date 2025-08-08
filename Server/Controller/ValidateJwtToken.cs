@@ -6,20 +6,19 @@ using HardWorker.Data;
 
 namespace HardWorker.Controller
 {
-    // Servicio encargado de generar tokens JWT para usuarios autenticados.
+    // ==================== SERVICIO DE GENERACIÓN DE TOKENS JWT ====================
     public class ValidateJwtToken
     {
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
 
-        // Constructor que recibe las configuraciones del sistema y el contexto de base de datos.
         public ValidateJwtToken(IConfiguration configuration, ApplicationDbContext context)
         {
             _configuration = configuration;
             _context = context;
         }
 
-        // Genera un token JWT válido para el usuario especificado.
+        // ==================== GENERAR TOKEN JWT ====================
         public string GenerateJwtToken(string username)
         {
             // Obtener configuración JWT desde appsettings.json
@@ -50,9 +49,9 @@ namespace HardWorker.Controller
             // Crear claims (información codificada en el token)
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, username),                 // Sujeto del token
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // ID único del token
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),        // ID del usuario                     //guardar el rol del usuario
+                new Claim(JwtRegisteredClaimNames.Sub, username),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), 
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),         
                 new Claim(ClaimTypes.Role, (user.Role ?? "User").ToString()),
                             };
 
@@ -61,7 +60,7 @@ namespace HardWorker.Controller
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(60), // Tiempo de expiración del token
+                expires: DateTime.Now.AddMinutes(60),
                 signingCredentials: creds
             );
 

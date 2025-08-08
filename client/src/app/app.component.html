@@ -1,1 +1,8 @@
-<router-outlet />
+<div class="app-container" [class.without-nav]="!showNav">
+    <div class="nav-container" *ngIf="showNav">
+        <app-nav></app-nav>
+    </div>
+    <main class="main-content">
+        <router-outlet></router-outlet>
+    </main>
+</div>  

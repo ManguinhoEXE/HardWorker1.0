@@ -1,78 +1,100 @@
+<!-- ==================== 1. SIDEBAR PRINCIPAL ==================== -->
 <div class="d-flex flex-column align-items-center sidebar">
 
+  <!-- 1.1 Botón de cierre de sesión -->
+  <button class="btn btn-danger" (click)="logout()"></button>
 
-  <button class="btn btn-danger" (click)="logout()">
-  </button>
-
-  <!-- Foto de perfil -->
+  <!-- ==================== 2. SECCIÓN DE PERFIL ==================== -->
   <div class="profile-image-container">
-    <img *ngIf="profileImage" [src]="profileImage" alt="Profile Image" class="profile-image"
-      (click)="fileInput.click()" />
+    <!-- Siempre mostrar imagen, con fallback automático -->
+    <img [src]="profileImage || defaultProfileImage" alt="Profile Image" class="profile-image"
+      (click)="fileInput.click()" (error)="onImageError($event)" />
     <input type="file" #fileInput (change)="onFileSelected($event)" hidden />
   </div>
 
+  <!-- Nombre del usuario -->
+  <p class="text-white fw-bold mt-2">{{firstName}} {{lastName}}</p>
 
-  <p class="text-white fw-bold mt-2"> {{firstName}} {{lastName}}</p>
-
-  <!-- Botonoes -->
+  <!-- ==================== 3. NAVEGACIÓN ==================== -->
   <nav class="nav flex-column">
-    <button class="btn btn-light w-100 my-1" routerLink="/inicio" routerLinkActive="active-nav-button">Mis Horas</button>
-    <button class="btn btn-secondary w-100 my-1" routerLink="/tablero"  routerLinkActive="active-nav-button-board">Tablero</button>
+    <!-- 3.1 Botones de navegación principal -->
+    <button class="btn btn-light w-100 my-1" routerLink="/inicio" routerLinkActive="active-nav-button">
+      Mis Horas
+    </button>
+    <button class="btn btn-secondary w-100 my-1" routerLink="/tablero" routerLinkActive="active-nav-button-board">
+      Tablero
+    </button>
+
+    <!-- ==================== 4. ÁREA DE NOTIFICACIONES ==================== -->
     <div class="d-flex justify-content-center align-items-center mt-2">
       <div class="card info-card p-3 shadow">
-
+        <!-- Lista de notificaciones -->
         <ng-container *ngFor="let n of notifications">
-          <div class="card p-2 shadow notification-card mb-3" [class.disabled]="n.type==='hoursAccepted' && n.type==='hoursRejected' || n.type==='compAccepted' && n.type==='compRejected'"
-            [style.cursor]="n.type==='hoursRequest' || n.type==='compRequest' ? 'pointer' : 'default'" (click)="openModal(n)">
+          <!-- 4.1 Tarjeta de notificación individual -->
+          <div class="card p-2 shadow notification-card mb-3"
+            [class.disabled]="n.type==='hoursAccepted' || n.type==='hoursRejected' || n.type==='compAccepted' || n.type==='compRejected'"
+            [style.cursor]="n.type==='hoursRequest' || n.type==='compRequest' ? 'pointer' : 'default'"
+            (click)="openModal(n)">
+
+            <!-- Encabezado de notificación -->
             <h6 class="fw-bold mb-1">
               {{ n.firstName }} {{ n.lastName }}
-              <span class=" status-dot"></span>
+              <span class="status-dot"></span>
             </h6>
 
+            <!-- 4.2 Contenido según tipo de notificación -->
+            <!-- Solicitud de horas -->
             <p *ngIf="n.type==='hoursRequest'">
               Ha solicitado <strong>{{n.hours}} horas</strong><br>
               "{{n.description}}"
+
             </p>
 
-            
+            <!-- Horas aceptadas -->
             <p *ngIf="n.type==='hoursAccepted'">
-              Sus <strong>{{n.hours}} horas</strong> han sido aceptadas.
+              Sus <strong>{{n.hours}} horas</strong> han sido aceptadas. <br>
+            <strong>{{ n.acceptedDate }}</strong>
             </p>
 
+            <!-- Horas rechazadas -->
             <p *ngIf="n.type==='hoursRejected'">
-              Sus <strong>{{n.hours}} horas</strong> han sido Rechazadas.
+              Sus <strong>{{n.hours}} horas</strong> han sido Rechazadas. <br>
+              <strong>{{ n.rejectedDate }}</strong>
             </p>
 
+            <!-- Solicitud de compensatorio -->
             <p *ngIf="n.type==='compRequest'">
               De <strong>{{ n.from | date:'short' }}</strong> a <strong>{{ n.to | date:'short' }}</strong><br>
               razon: "{{ n.reason }}"
             </p>
 
+            <!-- Compensatorio aceptado -->
             <p *ngIf="n.type==='compAccepted'">
-              Su compensatorio de <strong>{{ n.from | date:'short' }}</strong> a <strong>{{ n.to | date:'short'
-                }}</strong> ha sido aceptado.<br>
+              Su compensatorio de <strong>{{ n.from | date:'short' }}</strong> a
+              <strong>{{ n.to | date:'short' }}</strong> ha sido aceptado.<br>
               Razon: "{{ n.reason }}"
             </p>
 
+            <!-- Compensatorio rechazado -->
             <p *ngIf="n.type==='compRejected'">
-              Su compensatorio de <strong>{{ n.from | date:'short' }}</strong> a <strong>{{ n.to | date:'short'
-                }}</strong> ha sido rechazado.<br>
+              Su compensatorio de <strong>{{ n.from | date:'short' }}</strong> a
+              <strong>{{ n.to | date:'short' }}</strong> ha sido rechazado.<br>
               Razon: "{{ n.reason }}"
             </p>
           </div>
         </ng-container>
       </div>
     </div>
-
   </nav>
 </div>
 
-
-<!-- Modal de notificación -->
+<!-- ==================== 5. MODAL DE NOTIFICACIONES ==================== -->
 <div class="custom-modal-backdrop" *ngIf="selectedNotification">
   <div class="custom-modal">
+    <!-- Botón de cierre -->
     <button class="close-btn" (click)="closeModal()">×</button>
-    <!-- Modal para solicitud de horas -->
+
+    <!-- 5.1 Modal para solicitud de horas -->
     <ng-container *ngIf="selectedNotification.type==='hoursRequest'">
       <h5 class="fw-bold mb-3 text-center">Solicitud de Horas</h5>
       <h6>{{ selectedNotification.firstName }} {{ selectedNotification.lastName }}</h6>
@@ -80,6 +102,7 @@
         Ha solicitado <strong>{{ selectedNotification.hours }}</strong> horas<br>
         "{{ selectedNotification.description }}"
       </p>
+      <!-- Botones de acción -->
       <div class="d-flex justify-content-between mt-4">
         <button class="btn btn-success w-50 me-2" (click)="acceptHourRequest(selectedNotification.id)">
           Aceptar
@@ -90,9 +113,9 @@
       </div>
     </ng-container>
 
-    <!-- Modal para solicitud de compensatorio -->
+    <!-- 5.2 Modal para solicitud de compensatorio -->
     <ng-container *ngIf="selectedNotification.type==='compRequest'">
-      <h5 class="fw-bold mb-3 text-center">Solicitud de <br> Compensatorio</h5>
+      <h5 class="fw-bold mb-3 text-center">Solicitud de Compensatorio</h5>
       <h6>{{ selectedNotification.firstName }} {{ selectedNotification.lastName }}</h6>
       <p>
         Ha solicitado un compensatorio:<br>
@@ -100,15 +123,15 @@
         Hasta <strong>{{ selectedNotification.to | date:'short' }}</strong><br>
         Razon: "{{ selectedNotification.reason }}"
       </p>
+      <!-- Botones de acción -->
       <div class="d-flex justify-content-between mt-4">
         <button class="btn btn-success w-50 me-2" (click)="acceptCompRequest(selectedNotification.id)">
           Aceptar
         </button>
-        <button class="btn btn-danger w-50 ms-2" (click)="rejectCompRequest(selectedNotification.id)" >
+        <button class="btn btn-danger w-50 ms-2" (click)="rejectCompRequest(selectedNotification.id)">
           Rechazar
         </button>
       </div>
     </ng-container>
-
   </div>
 </div>

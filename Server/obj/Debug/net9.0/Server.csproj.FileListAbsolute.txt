@@ -365,12 +365,6 @@ C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\scopedcss\bundle\Server.sty
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets.build.json
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets.development.json
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets.build.endpoints.json
-C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets\msbuild.Server.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets\msbuild.Server.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets\msbuild.build.Server.props
-C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets\msbuild.buildMultiTargeting.Server.props
-C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets\msbuild.buildTransitive.Server.props
-C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets.pack.json
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\Server.csproj.Up2Date
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\Server.dll
 C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\refint\Server.dll
@@ -384,3 +378,8 @@ C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\MailKit.dll
 C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\MimeKit.dll
 C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\Newtonsoft.Json.dll
 C:\Users\jmorales\HardWorker\Server\bin\Debug\net9.0\System.Net.WebSockets.WebSocketProtocol.dll
+C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\rpswa.dswa.cache.json
+C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\rjimswa.dswa.cache.json
+C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
+C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
+C:\Users\jmorales\HardWorker\Server\obj\Debug\net9.0\staticwebassets.build.json.cache

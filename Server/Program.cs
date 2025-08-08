@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using HardWorker.Controller;
 using Hardworker.Hubs;
+using HardWorker.Server.Utils;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -80,6 +81,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // 🧠 INYECTAR SERVICIO personalizado para generación de JWT
 builder.Services.AddScoped<ValidateJwtToken>();
+
+// 📨 INYECTAR SERVICIO personalizado para enviar correos electrónicos
+builder.Services.AddSingleton<EmailHelper>();
+builder.Services.AddScoped<HardWorker.Server.Controller.EmailController>();
 
 
 // ✨ CONSTRUIR APP

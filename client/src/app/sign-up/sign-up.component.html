@@ -10,28 +10,39 @@
                 <h2 class="fw-bold text-center">Bienvenido Hardworker</h2>
                 <h5 class="fw-bold text-center">Ingrese sus datos</h5>
 
-                <form class="d-flex flex-column align-items-center justify-content-center"(ngSubmit)="onSubmit()">
+                <!-- 🚨 MOSTRAR ERRORES -->
+                <div *ngIf="errors.length > 0" class="error-container">
+                    <ul class="error-list">
+                        <li *ngFor="let error of errors" class="error-item">{{ error }}</li>
+                    </ul>
+                </div>
+
+                <form class="d-flex flex-column align-items-center justify-content-center" (ngSubmit)="onSubmit()">
                     <div class="row justify-content-center align-items-center mt-4">
-                        
+
                         <div class="col-5 mb-3">
                             <label for="Username" class="form-label">Usuario</label>
-                            <input type="text" class="form-control rounded-2" name="Username" [(ngModel)]="username" required>
+                            <input type="text" class="form-control rounded-2" name="Username" [(ngModel)]="username"
+                                required>
                         </div>
-                        
+
                         <div class="col-5 mb-3">
                             <label for="Password" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control rounded-2" name="Password" [(ngModel)]="password" required>
+                            <input type="password" class="form-control rounded-2" name="Password" [(ngModel)]="password"
+                                required>
                         </div>
                         <div class="col-5 mb-3">
                             <label for="firstname" class="form-label">1er Nombre</label>
-                            <input type="text" class="form-control rounded-2" name="FirstName" [(ngModel)]="firstName" required>
+                            <input type="text" class="form-control rounded-2" name="FirstName" [(ngModel)]="firstName"
+                                required>
                         </div>
                         <div class="col-5 mb-3">
                             <label for="lastname" class="form-label">1er Apellido</label>
-                            <input type="text" class="form-control rounded-2" name="LastName" [(ngModel)]="lastName" required>
+                            <input type="text" class="form-control rounded-2" name="LastName" [(ngModel)]="lastName"
+                                required>
 
                         </div>
-                        
+
                         <div class="text-center mt-3">
                             <a routerLink="/iniciarsesion">Ya tienes cuenta?
                             </a>

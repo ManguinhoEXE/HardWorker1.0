@@ -1,58 +1,92 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { Observable } from "rxjs";
-import { BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject } from "rxjs";
+import { HourRequest, AcceptedHoursResponse } from "../Interfaces/index";
 
-
-@Injectable
-    ({
-        providedIn: 'root'
-    })
-
+@Injectable({
+    providedIn: 'root'
+})
 export class hourService {
-    private apiurl = 'http://localhost:5072/api/HoursUser';
 
-    totalAccepted$ = new BehaviorSubject<number>(0);
+    /**
+     * ==================== 2. PROPIEDADES ====================
+     */
+    private readonly apiUrl = 'http://localhost:5072/api/HoursUser';
+    private readonly httpOptions = { withCredentials: true };
 
-    constructor(private http: HttpClient) { }
+    // Estado reactivo para el total de horas aceptadas
+    public totalAccepted$ = new BehaviorSubject<number>(0);
 
-    addHour(hours: number, description: String, ): Observable<any> {
-        // Crear un objeto HoursUser con las propiedades necesarias
-        const hoursUser = { hours: hours, description: description };
-
-        return this.http.post(`${this.apiurl}/addhour`, hoursUser, { withCredentials: true });
+    /**
+     * ==================== 3. CICLO DE VIDA ====================
+     */
+    constructor(private http: HttpClient) {
+        console.log('[HourService] Inicializado. SignalR será manejado por NavComponent.');
     }
 
-    getHours(): Observable<any> {
-        return this.http.get(`${this.apiurl}/gethours`, { withCredentials: true });
+
+    /**
+     * ==================== 4. GESTIÓN DE SOLICITUDES ====================
+     */
+
+    /**
+     * Crea una nueva solicitud de horas
+     */
+    addHour(hours: number, description: string): Observable<any> {
+        const hoursUser: HourRequest = { hours, description };
+        return this.http.post(`${this.apiUrl}/addhour`, hoursUser, this.httpOptions);
     }
 
+    /**
+     * Obtiene las solicitudes de horas del usuario actual
+     */
+    getHours(): Observable<HourRequest[]> {
+        return this.http.get<HourRequest[]>(`${this.apiUrl}/gethours`, this.httpOptions);
+    }
+
+    /**
+     * Obtiene las horas aceptadas del usuario actual
+     */
+    getAcceptedHours(): Observable<AcceptedHoursResponse> {
+        return this.http.get<AcceptedHoursResponse>(`${this.apiUrl}/acceptedhours`, this.httpOptions);
+    }
+
+    /**
+     * ==================== 5. GESTIÓN ADMINISTRATIVA ====================
+     */
+
+    /**
+     * Acepta una solicitud de horas (solo administradores)
+     */
     acceptRequest(id: number): Observable<any> {
-        return this.http.patch(`${this.apiurl}/accept/${id}`, {}, { withCredentials: true });
+        return this.http.patch(`${this.apiUrl}/accept/${id}`, {}, this.httpOptions);
     }
 
+    /**
+     * Rechaza una solicitud de horas (solo administradores)
+     */
     rejectRequest(id: number): Observable<any> {
-        return this.http.patch(`${this.apiurl}/reject/${id}`, {}, { withCredentials: true });
+        return this.http.patch(`${this.apiUrl}/reject/${id}`, {}, this.httpOptions);
     }
 
-    getAcceptedHours(): Observable<{
-        totalAcceptedHours: number;
-        entries: { id: number; hours: number; currentHour: string }[];
-    }> {
-        return this.http.get<{
-            totalAcceptedHours: number;
-            entries: { id: number; hours: number; currentHour: string }[];
-        }>(
-            `${this.apiurl}/acceptedhours`,
-            { withCredentials: true }
-        );
-    }
+    /**
+     * ==================== 6. UTILIDADES ====================
+     */
 
+    /**
+     * Actualiza el total de horas aceptadas en el BehaviorSubject
+     */
     refreshTotal(): void {
         this.getAcceptedHours().subscribe({
-            next: res => this.totalAccepted$.next(res.totalAcceptedHours),
-            error: err => console.error('Error refrescando total horas:', err)
+            next: (response) => this.totalAccepted$.next(response.totalAcceptedHours),
+            error: (err) => console.error('Error refrescando total horas:', err)
         });
     }
 
+    isSignalRConnected(): boolean {
+        if (typeof window !== 'undefined' && (window as any).signalRConnection) {
+            return (window as any).signalRConnection.state === 'Connected';
+        }
+        return false;
+    }
 }

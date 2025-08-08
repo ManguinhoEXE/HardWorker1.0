@@ -1,0 +1,24 @@
+/* app.component.css */
+.app-container {
+    display: grid;
+    grid-template-columns: auto 1fr; /* Nav auto-width, contenido restante */
+    min-height: 100vh;
+}
+
+.app-container.without-nav {
+    grid-template-columns: 1fr; /* Solo contenido cuando no hay nav */
+}
+
+.nav-container {
+    /* El nav mantiene su propio ancho */
+}
+
+.main-content {
+    overflow: auto;
+    padding: 20px;
+}
+
+.without-nav .main-content {
+    padding: 0;
+    background: transparent;
+}

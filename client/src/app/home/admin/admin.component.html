@@ -1,0 +1,353 @@
+<div class="container-fluid mt-4">
+    <div class="row">
+
+        <!-- PANEL DE USUARIOS -->
+        <!-- SOLO ADMINISTRADOR: Panel para ver lista de usuarios registrados -->
+        <div class="col-6">
+            <div class="card admin-users-card rounded-5 shadow">
+                <div class="card-body">
+                    <!-- Título de la sección -->
+                    <h3 class="card-title text-center mb-4 mt-3 fw-bold text-white">
+                        <i class="fas fa-users me-2"></i>
+                        Usuarios Registrados ({{ usersSummary.length }})
+                    </h3>
+
+                    <!-- Lista de usuarios -->
+                    <div class="users-scroll-container" *ngIf="!isLoadingUsers">
+                        <!-- Mensaje cuando no hay usuarios -->
+                        <div *ngIf="(!usersSummary || usersSummary.length === 0)" class="text-center text-white py-4">
+                            <i class="bi bi-people-fill me-2"></i>
+                            No hay usuarios registrados en el sistema
+                        </div>
+
+                        <!-- Tarjetas de usuario -->
+                        <!-- SOLO ADMINISTRADOR: Tarjetas clickeables para ver detalles de cada usuario -->
+                        <div class="user-card-admin" [class.selected]="selectedUser?.id === user.id"
+                            (click)="viewUserDetails(user)" *ngFor="let user of usersSummary; trackBy: trackByUserId">
+
+                            <!-- Avatar del usuario -->
+                            <div class="user-avatar-admin">
+                                <img *ngIf="user.profileImage; else defaultAvatar" [src]="user.profileImage"
+                                    [alt]="user.firstName">
+                                <ng-template #defaultAvatar>
+                                    <i class="bi bi-person-fill"></i>
+                                </ng-template>
+                            </div>
+
+                            <!-- Información del usuario -->
+                            <div class="user-info-admin">
+                                <h5 class="user-name-admin">{{ user.firstName }} {{ user.lastName }}</h5>
+                                <div class="user-stats-admin">
+                                    <!-- Horas disponibles -->
+                                    <span class="stat-item-admin">
+                                        <i class="fas fa-clock"></i>
+                                        {{ formatHours(user.availableHours) }}h disponibles
+                                    </span>
+                                    <!-- Compensatorios -->
+                                    <span class="stat-item-admin">
+                                        <i class="fas fa-file-alt"></i>
+                                        {{ user.totalCompensatoryRequests }} compensatorios
+                                    </span>
+                                    <!-- Solicitudes pendientes -->
+                                    <span class="stat-item-admin pending"
+                                        *ngIf="user.pendingCompensatoryRequests > 0 || user.pendingHoursRequests > 0">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ user.pendingCompensatoryRequests + user.pendingHoursRequests }} pendientes
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indicadores de carga -->
+                    <!-- SOLO ADMINISTRADOR: Spinners específicos para carga de datos de admin -->
+                    <div *ngIf="selectedUser && isLoadingUserDashboard" class="user-preview-loading">
+                        <div class="spinner-border text-light spinner-border-sm" role="status"></div>
+                        <span class="ms-2 text-light">Cargando datos del usuario...</span>
+                    </div>
+
+                    <div *ngIf="isLoadingUsers" class="text-center py-5">
+                        <div class="spinner-border text-light" role="status"></div>
+                        <p class="mt-2 text-light">Cargando usuarios...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL DE ESTADÍSTICAS -->
+        <!-- SOLO ADMINISTRADOR: Panel para ver estadísticas globales del sistema -->
+        <div class="col-6">
+            <div class="card admin-stats-card rounded-5 shadow">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4 mt-3 fw-bold text-white">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Estadísticas Globales
+                    </h3>
+
+                    <!-- Contenedor de estadísticas -->
+                    <div *ngIf="!isLoadingStats && globalStatistics" class="stats-scroll-container">
+                        <!-- SOLO ADMINISTRADOR: Todas estas estadísticas son exclusivas del admin -->
+
+                        <!-- Estadísticas de Usuarios -->
+                        <div class="stat-card-admin users-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ globalStatistics.userStatistics.totalUsers }}</h4>
+                                <p>Usuarios Totales</p>
+                                <small>{{ globalStatistics.userStatistics.adminUsers }} administradores</small>
+                            </div>
+                        </div>
+
+                        <!-- Estadísticas de Horas Disponibles -->
+                        <div class="stat-card-admin hours-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ formatHours(globalStatistics.hourStatistics.totalHoursAvailable) }}h</h4>
+                                <p>Horas Disponibles</p>
+                                <small>{{ globalStatistics.hourStatistics.acceptedHourRequests }} aprobadas</small>
+                            </div>
+                        </div>
+
+                        <!-- Estadísticas de Compensatorios -->
+                        <div class="stat-card-admin requests-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ globalStatistics.compensatoryStatistics.totalCompensatoryRequests }}</h4>
+                                <p>Compensatorios Totales</p>
+                                <small>{{ globalStatistics.compensatoryStatistics.acceptedCompensatories }} aprobados</small>
+                            </div>
+                        </div>
+
+                        <!-- Solicitudes Pendientes -->
+                        <div class="stat-card-admin pending-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ globalStatistics.compensatoryStatistics.pendingCompensatories +
+                                    globalStatistics.hourStatistics.pendingHourRequests }}</h4>
+                                <p>Solicitudes Pendientes</p>
+                                <small>Requieren atención</small>
+                            </div>
+                        </div>
+
+                        <!-- Compensatorios Activos -->
+                        <div class="stat-card-admin active-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-stopwatch"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ globalStatistics.compensatoryStatistics.activeCompensatories }}</h4>
+                                <p>En Curso Ahora</p>
+                                <small>{{ formatHours(globalStatistics.compensatoryStatistics.activeHours) }}h activas</small>
+                            </div>
+                        </div>
+
+                        <!-- Horas Utilizadas -->
+                        <div class="stat-card-admin used-hours-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-graph-down"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ formatHours(globalStatistics.compensatoryStatistics.totalHoursInCompensatories) }}h</h4>
+                                <p>Horas Utilizadas</p>
+                                <small>En compensatorios</small>
+                            </div>
+                        </div>
+
+                        <!-- Solicitudes Rechazadas -->
+                        <div class="stat-card-admin rejected-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ globalStatistics.compensatoryStatistics.rejectedCompensatories +
+                                    globalStatistics.hourStatistics.rejectedHourRequests }}</h4>
+                                <p>Solicitudes Rechazadas</p>
+                                <small>Total histórico</small>
+                            </div>
+                        </div>
+
+                        <!-- Compensatorios Finalizados -->
+                        <div class="stat-card-admin finished-stat-admin">
+                            <div class="stat-icon-admin">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="stat-content-admin">
+                                <h4>{{ globalStatistics.compensatoryStatistics.finishedCompensatories }}</h4>
+                                <p>Compensatorios Finalizados</p>
+                                <small>Completados exitosamente</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indicador de carga -->
+                    <!-- SOLO ADMINISTRADOR: Spinner para carga de estadísticas -->
+                    <div *ngIf="isLoadingStats" class="text-center py-5">
+                        <div class="spinner-border text-light" role="status"></div>
+                        <p class="mt-2 text-light">Cargando estadísticas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL DE DETALLES DE USUARIO ==================== -->
+<!-- SOLO ADMINISTRADOR: Modal para ver detalles completos de un usuario -->
+<div *ngIf="showUserModal" class="user-modal-backdrop" (click)="closeUserModal()">
+    <div class="user-modal-container" (click)="$event.stopPropagation()">
+        <!-- Cabecera del modal -->
+        <div class="user-modal-header">
+            <h3>
+                <i class="bi bi-eye me-2"></i>
+                Vista de {{ selectedUserDashboard?.user?.firstName }} {{ selectedUserDashboard?.user?.lastName }}
+            </h3>
+            <button class="btn btn-outline-light btn-sm" (click)="closeUserModal()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Contenido del modal -->
+        <div class="user-modal-content">
+            <!-- Resumen de horas disponibles -->
+            <!-- SOLO ADMINISTRADOR: Vista readonly de horas del usuario seleccionado -->
+            <div class="row justify-content-center">
+                <div class="col-4 text-center mb-4">
+                    <div class="card horas-disponibles shadow p-3 rounded-5 modal-readonly">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <span class="card-title text-white fw-bold">Horas Disponibles</span>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-clock-history text-white fs-3 me-3"></i>
+                                <span class="text-white fs-3 fw-bold">
+                                    {{ formatHours(selectedUserDashboard?.statistics?.availableHours) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-center p-4">
+                <!-- Panel de solicitudes del usuario -->
+                <!-- SOLO ADMINISTRADOR: Vista readonly de solicitudes del usuario seleccionado -->
+                <div class="col-6">
+                    <div class="card-solicitarM rounded-5 modal-readonly">
+                        <h3 class="card-title fw-bold text-center pt-4 text-white">
+                            <i class="bi bi-lock me-2"></i>
+                            Solicitudes de {{ selectedUserDashboard?.user?.firstName }}
+                        </h3>
+
+                        <hr class="divider mx-5 mt-4" />
+
+                        <!-- Historial de solicitudes -->
+                        <div class="mt-1 historys max-height-300">
+                            <div *ngFor="let request of selectedUserDashboard?.compensatoryHistory"
+                                class="card-history-solicitar card rounded-4 my-2 p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold mx-1 text-white">De: {{ formatDateTime(request?.from) }}</span>
+                                    <span class="fw-bold mx-2 text-white">Hasta: {{ formatDateTime(request?.to) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="fw-bold mx-4 text-white">Razón: {{ request?.reason || 'N/A' }}</span>
+                                    <span class="fw-bold mx-4 text-white">Estado:
+                                        <span [ngClass]="{
+                                            'status-accepted': request?.status === 'Aceptada',
+                                            'status-pending': request?.status === 'Pendiente',
+                                            'status-rejected': request?.status === 'Rechazada'
+                                        }">{{ request?.status || 'N/A' }}</span>
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-center align-items-center mt-2">
+                                    <span class="fw-bold text-white">Horas: {{ request?.hoursRequested || 0 }}h</span>
+                                    <span class="fw-bold text-white ms-3">Solicitud: {{ formatDateTime(request?.currentHour) }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Mensaje cuando no hay solicitudes -->
+                            <div *ngIf="!selectedUserDashboard?.compensatoryHistory?.length" class="text-center text-white-50 py-3">
+                                <i class="bi bi-inbox"></i>
+                                Sin solicitudes registradas
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de registro de horas -->
+                <!-- SOLO ADMINISTRADOR: Vista readonly de horas del usuario seleccionado -->
+                <div class="col-5">
+                    <div class="card horas-cardM rounded-5 shadow modal-readonly">
+                        <div class="card-body">
+                            <h3 class="card-title text-center mb-4 mt-3 fw-bold">
+                                <i class="bi bi-lock me-2"></i>
+                                Registro de Horas
+                            </h3>
+
+                            <hr class="divider" />
+
+                            <!-- Historial de horas -->
+                            <div class="mt-3 history max-height-Hours">
+                                <div *ngFor="let hour of selectedUserDashboard?.hourHistory"
+                                    class="card-history card rounded-4 my-2 p-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-white">{{ hour?.submittedHours || hour?.hours || 0 }} Horas</span>
+                                        <span class="fw-bold text-white">{{ formatDateTime(hour?.currentHour) }}</span>
+                                        <span class="status-dot" [ngClass]="{
+                                            'accepted': hour?.status === 'Aceptada',
+                                            'pending': hour?.status === 'Pendiente',
+                                            'rejected': hour?.status === 'Rechazada'
+                                        }"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Mensaje cuando no hay horas registradas -->
+                                <div *ngIf="!selectedUserDashboard?.hourHistory?.length" class="text-center text-white-50 py-3">
+                                    <i class="bi bi-inbox"></i>
+                                    Sin horas registradas
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de estadísticas del usuario -->
+            <!-- SOLO ADMINISTRADOR: Estadísticas resumidas del usuario seleccionado -->
+            <div class="user-stats-summary mt-4">
+                <div class="row">
+                    <div class="col-3">
+                        <div class="stat-mini-card">
+                            <div class="stat-value">{{ formatHours(selectedUserDashboard?.statistics?.totalHoursRegistered) }}h</div>
+                            <div class="stat-label">Total Registradas</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-mini-card">
+                            <div class="stat-value">{{ selectedUserDashboard?.statistics?.totalCompensatoryRequests || 0 }}</div>
+                            <div class="stat-label">Compensatorios</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-mini-card">
+                            <div class="stat-value">{{ (selectedUserDashboard?.statistics?.pendingCompensatoryRequests || 0) +
+                                (selectedUserDashboard?.statistics?.pendingHourRequests || 0) }}</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-mini-card">
+                            <div class="stat-value">{{ selectedUserDashboard?.statistics?.activeCompensatories || 0 }}</div>
+                            <div class="stat-label">Activos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
