@@ -3,12 +3,14 @@ import { SignUpComponent } from './sign-up/sign-up.component';
 import { SignOnComponent } from './sign-on/sign-on.component';
 import { HomeComponent } from './home/home.component';
 import { BoardComponent } from './board/board.component';
+import { SuperAdminComponent } from './super-admin/super-admin.component';
 
 export const routes: Routes = [
-    { path: 'registro', component: SignUpComponent},
-    { path: 'iniciarsesion', component: SignOnComponent},
-    {path: 'inicio', component: HomeComponent},
-    {path: 'tablero', component: BoardComponent},
-    {path: '', redirectTo: '/iniciarsesion', pathMatch: 'full'}
+    { path: 'registro', component: SignUpComponent },
+    { path: 'iniciarsesion', component: SignOnComponent },
+    { path: 'inicio', component: HomeComponent },
+    { path: 'tablero', component: BoardComponent },
+    { path: 'superadmin', component: SuperAdminComponent },
+    { path: '', redirectTo: '/iniciarsesion', pathMatch: 'full' },
 ];
 

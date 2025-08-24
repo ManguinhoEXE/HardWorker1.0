@@ -2,6 +2,9 @@
     <div class="container-main rounded-5 shadow bg-white row">
         <div class="col-6 d-flex justify-content-center align-items-center">
             <div class="container-style rounded-5 shadow d-flex justify-content-center align-items-center">
+                <button type="button" class="btn-admin-corner" (click)="goToSuperAdmin()">
+                    <i class="bi bi-arrow-return-left"></i>
+                </button>
                 <img src="icons/logo.png" alt="logo" class="img-fluid h-50 w-50">
             </div>
         </div>
@@ -10,52 +13,72 @@
                 <h2 class="fw-bold text-center">Bienvenido Hardworker</h2>
                 <h5 class="fw-bold text-center">Ingrese sus datos</h5>
 
-                <!-- 🚨 MOSTRAR ERRORES -->
-                <div *ngIf="errors.length > 0" class="error-container">
-                    <ul class="error-list">
-                        <li *ngFor="let error of errors" class="error-item">{{ error }}</li>
+                <!-- MENSAJE DE ACCESO DENEGADO -->
+                <div *ngIf="accessDeniedMessage" class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {{ accessDeniedMessage }}
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-primary btn-sm me-2" (click)="goToLogin()">
+                            Ir al Login
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="refreshAuthorization()">
+                            Verificar de nuevo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MENSAJE DE ÉXITO -->
+                <div *ngIf="successMessage" class="alert alert-success">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    {{ successMessage }}
+                </div>
+
+                <!-- ERRORES DE VALIDACIÓN -->
+                <div *ngIf="errors.length > 0" class="alert alert-warning">
+                    <strong>Errores:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li *ngFor="let error of errors">{{ error }}</li>
                     </ul>
                 </div>
 
-                <form class="d-flex flex-column align-items-center justify-content-center" (ngSubmit)="onSubmit()">
-                    <div class="row justify-content-center align-items-center mt-4">
+                <!-- LOADING -->
+                <div *ngIf="isCheckingAccess && !accessDeniedMessage" class="text-center mb-3">
+                    <div class="spinner-border spinner-border-sm me-2"></div>
+                    <small>Verificando permisos...</small>
+                </div>
 
+                <form *ngIf="getCurrentUserRole() === 'Super'" (ngSubmit)="onSubmit()">
+                    <div class="row justify-content-center mt-4">
                         <div class="col-5 mb-3">
-                            <label for="Username" class="form-label">Usuario</label>
-                            <input type="text" class="form-control rounded-2" name="Username" [(ngModel)]="username"
-                                required>
-                        </div>
-
-                        <div class="col-5 mb-3">
-                            <label for="Password" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control rounded-2" name="Password" [(ngModel)]="password"
-                                required>
-                        </div>
-                        <div class="col-5 mb-3">
-                            <label for="firstname" class="form-label">1er Nombre</label>
-                            <input type="text" class="form-control rounded-2" name="FirstName" [(ngModel)]="firstName"
-                                required>
+                            <label class="form-label">Usuario</label>
+                            <input type="text" class="form-control" [(ngModel)]="username" name="username" required
+                                (input)="onFieldChange('username')">
                         </div>
                         <div class="col-5 mb-3">
-                            <label for="lastname" class="form-label">1er Apellido</label>
-                            <input type="text" class="form-control rounded-2" name="LastName" [(ngModel)]="lastName"
-                                required>
-
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" [(ngModel)]="password" name="password" required
+                                (input)="onFieldChange('password')">
                         </div>
-
-                        <div class="text-center mt-3">
-                            <a routerLink="/iniciarsesion">Ya tienes cuenta?
-                            </a>
+                        <div class="col-5 mb-3">
+                            <label class="form-label">Primer Nombre</label>
+                            <input type="text" class="form-control" [(ngModel)]="firstName" name="firstName" required
+                                (input)="onFieldChange('firstName')">
+                        </div>
+                        <div class="col-5 mb-3">
+                            <label class="form-label">Primer Apellido</label>
+                            <input type="text" class="form-control" [(ngModel)]="lastName" name="lastName" required
+                                (input)="onFieldChange('lastName')">
                         </div>
                     </div>
 
-                    <!-- Crear -->
                     <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-light rounded-2 px-5 shadow-sm">Crear</button>
+                        <button type="submit" class="btn btn-light rounded-2 px-5 shadow-sm" [disabled]="isSubmitting">
+                            <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                            {{ isSubmitting ? 'Creando...' : 'Crear Usuario' }}
+                        </button>
                     </div>
                 </form>
             </div>
-
         </div>
     </div>
 </div>

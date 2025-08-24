@@ -9,173 +9,109 @@ using HardWorker.Server.Controller;
 
 [Route("api/[Controller]")]
 [ApiController]
-public class CompensatoryController : ControllerBase
+public class CompensatoryController : BaseController
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IHubContext<NotificationHub> _hubContext;
     private readonly EmailController _emailController;
 
     public CompensatoryController(ApplicationDbContext context, IHubContext<NotificationHub> hubContext, EmailController emailController)
+        : base(context, hubContext)
     {
-        _context = context;
-        _hubContext = hubContext;
         _emailController = emailController;
     }
 
     // ==================== OBTENER SOLICITUDES DEL USUARIO ====================
     [HttpGet("getrequests")]
-    public IActionResult getCompensatories()
+    public async Task<IActionResult> getCompensatories()
     {
-        var userIdClaim = User.Claims.FirstOrDefault(c =>
-            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-            && int.TryParse(c.Value, out _))?.Value;
+        return await ExecuteWithAuthenticationAsync<IActionResult>(async (userId) =>
+        {
+            var compensatoryData = await _context.Compensatories
+                .Where(c => c.UserId == userId)
+                .Select(c => new
+                {
+                    c.Id,
+                    FromDateTime = c.From.DateTime,
+                    ToDateTime = c.To.DateTime,
+                    c.Reason,
+                    c.Status,
+                    CurrentHourDateTime = c.CurrentHour
+                })
+                .OrderByDescending(c => c.CurrentHourDateTime)
+                .ToListAsync();
 
-        var token = Request.Cookies["token"];
-        if (string.IsNullOrEmpty(token))
-            return Unauthorized(new { message = "Usuario no autenticado." });
-
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "No se pudo obtener el ID del usuario desde el token." });
-
-        var compensatoryRequests = _context.Compensatories
-            .Where(c => c.UserId == userId)
-            .Select(c => new
+            if (!compensatoryData.Any())
+            {
+                return SuccessResponse("No se encontraron solicitudes de compensatorio.", new List<object>());
+            }
+            var compensatoryRequests = compensatoryData.Select(c => new
             {
                 c.Id,
-                From = c.From.ToString("yyyy-MM-ddTHH:mm:ss"),
-                To = c.To.ToString("yyyy-MM-ddTHH:mm:ss"),
+                From = FormatDateTime(c.FromDateTime),
+                To = FormatDateTime(c.ToDateTime),
                 c.Reason,
                 c.Status,
-                CurrentHour = c.CurrentHour.ToString("yyyy-MM-ddTHH:mm:ss")
-            })
-            .ToList();
+                CurrentHour = FormatDateTime(c.CurrentHourDateTime)
+            }).ToList();
 
-        if (!compensatoryRequests.Any())
-            return NotFound(new { message = "No se encontraron solicitudes de compensatorio." });
-
-        return Ok(compensatoryRequests);
+            return SuccessResponse("Solicitudes de compensatorio obtenidas exitosamente.", compensatoryRequests);
+        });
     }
+
 
     // ==================== CREAR NUEVA SOLICITUD ====================
     [HttpPost("addrequest")]
     public async Task<IActionResult> requestCompensatory([FromBody] Compensatory compensatory)
     {
-        try
+        return await TryExecuteAsync(async () =>
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c =>
-                c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-                && int.TryParse(c.Value, out _))?.Value;
-
-            var token = Request.Cookies["token"];
-            if (string.IsNullOrEmpty(token))
-                return Unauthorized(new { message = "Usuario no autenticado." });
-
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-                return Unauthorized(new { message = "No se pudo obtener el ID del usuario desde el token." });
-
-            // Validaciones básicas
-            if (compensatory.From >= compensatory.To)
-                return BadRequest(new { message = "La fecha de inicio debe ser menor a la fecha de fin." });
-
-            if (string.IsNullOrWhiteSpace(compensatory.Reason))
-                return BadRequest(new { message = "La razón es requerida." });
-
-            if (compensatory.From.Minute != compensatory.To.Minute)
-                return BadRequest(new { message = "La solicitud de compensatorio debe ser en horas completas. Los minutos de la hora de inicio y fin deben coincidir (ej. de 09:15 a 11:15)." });
-
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return NotFound(new { message = "Usuario no encontrado." });
-
-            var totalAccepted = await _context.HoursUsers
-                .Where(h => h.UserId == userId && h.Status == "Aceptada")
-                .SumAsync(h => h.Hours);
-
-            // Calcular horas solicitadas
-            var duration = compensatory.To - compensatory.From;
-            var hoursRequested = Math.Round(duration.TotalHours, 2);
-
-            // Validar horas disponibles
-            if (hoursRequested > totalAccepted)
+            return await ExecuteWithUserValidationAsync(async (user) =>
             {
-                return BadRequest(new
+                var modelValidation = ValidateModel();
+                if (modelValidation != null) return modelValidation;
+
+                var dateValidation = ValidateDateRange(compensatory.From.DateTime, compensatory.To.DateTime, "compensatorio");
+                if (dateValidation != null) return dateValidation;
+
+                var reasonValidation = ValidateRequired(compensatory.Reason, "La razón");
+                if (reasonValidation != null) return reasonValidation;
+
+                if (compensatory.From.Minute != compensatory.To.Minute)
+                    return BadRequest(new { message = "La solicitud de compensatorio debe ser en horas completas. Los minutos de la hora de inicio y fin deben coincidir (ej. de 09:15 a 11:15)." });
+
+                var totalAccepted = await GetUserAcceptedHoursAsync(user.Id);
+                var hoursRequested = CalculateHours(compensatory.From.DateTime, compensatory.To.DateTime);
+
+                if (hoursRequested > totalAccepted)
                 {
-                    message = $"No tienes suficientes horas disponibles. Disponibles: {totalAccepted}, solicitadas: {hoursRequested}"
-                });
-            }
-
-            compensatory.UserId = userId;
-            compensatory.CurrentHour = DateTime.Now;
-            compensatory.Status = "Pendiente";
-
-            await _context.Compensatories.AddAsync(compensatory);
-            await _context.SaveChangesAsync();
-
-            _ = SendCompensatoryNotificationsInBackground(compensatory, user, hoursRequested);
-
-            return Ok(new
-            {
-                message = "Solicitud de compensatorio creada exitosamente.",
-                compensatory = compensatory,
-                hoursRequested
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Ocurrió un error interno en el servidor.", error = ex.Message });
-        }
-    }
-
-
-
-    private async Task SendCompensatoryNotificationsInBackground(Compensatory compensatory, User user, double hoursRequested)
-    {
-        try
-        {
-            string nombreCompleto = $"{user.FirstName} {user.LastName}";
-            string fechaInicio = compensatory.From.ToString("dd/MM/yyyy HH:mm");
-            string fechaFin = compensatory.To.ToString("dd/MM/yyyy HH:mm");
-
-            string mensaje = $"El usuario {nombreCompleto} ha solicitado un compensatorio " +
-                             $"de {hoursRequested} horas ({fechaInicio} a {fechaFin}).\n\n" +
-                             $"Motivo: {compensatory.Reason}\n\n" +
-                             $"Esta solicitud requiere su aprobación en el panel de administración.";
-
-            // 🚀 EJECUTAR EMAIL Y SIGNALR EN PARALELO
-            var emailTask = _emailController.EnviarNotificacion(
-                "jpaul1706@hotmail.com",
-                nombreCompleto,
-                $"Nueva solicitud de compensatorio: {nombreCompleto}",
-                mensaje,
-                "compensatorio"
-            );
-
-            var signalRTask = _hubContext.Clients.Group("Admin").SendAsync(
-                "ReceiveNotification",
-                new
-                {
-                    id = compensatory.Id,
-                    firstName = user.FirstName,
-                    lastName = user.LastName,
-                    from = compensatory.From,
-                    to = compensatory.To,
-                    reason = compensatory.Reason,
-                    type = "compRequest"
+                    return BadRequest(new
+                    {
+                        message = $"No tienes suficientes horas disponibles. Disponibles: {totalAccepted}, solicitadas: {hoursRequested}"
+                    });
                 }
-            );
 
-            // Esperar que ambas notificaciones se completen
-            await Task.WhenAll(emailTask, signalRTask);
+                compensatory.UserId = user.Id;
+                compensatory.CurrentHour = DateTime.UtcNow;
+                compensatory.Status = "Pendiente";
 
-            Console.WriteLine($"[SUCCESS] Notificaciones de compensatorio enviadas para ID: {compensatory.Id}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ERROR] Fallo enviando notificaciones para compensatorio ID: {compensatory.Id} - {ex.Message}");
-        }
+                await _context.Compensatories.AddAsync(compensatory);
+                var saveResult = await SaveChangesAsync("Solicitud de compensatorio creada exitosamente.");
+                if (saveResult is not OkObjectResult) return saveResult;
+
+                var adminUserIds = await GetUserIdsByRoleAsync("Admin");
+                Console.WriteLine($" Admin IDs obtenidos: [{string.Join(", ", adminUserIds)}]");
+
+                _ = SendCompensatoryNotificationsInBackground(compensatory, user, hoursRequested, adminUserIds);
+
+                return SuccessResponse("Solicitud de compensatorio creada exitosamente.", new
+                {
+                    compensatory,
+                    hoursRequested
+                });
+            });
+        }, "crear solicitud de compensatorio");
     }
 
-    // ==================== OBTENER TODAS LAS SOLICITUDES (ADMIN) ====================
+    // ==================== OBTENER TODAS LAS SOLICITUDES ====================
     [HttpGet("getallrequests")]
     public IActionResult GetCompensatoryRequests()
     {
@@ -228,7 +164,6 @@ public class CompensatoryController : ControllerBase
                 .ToList()
                 .Select(c =>
                 {
-                    // Calcular estado dinámico
                     string dynamicStatus = c.Status ?? string.Empty;
                     if (c.Status == "Aceptada")
                     {
@@ -265,7 +200,6 @@ public class CompensatoryController : ControllerBase
                 })
                 .ToList();
 
-            // Estadísticas del historial
             var statistics = new
             {
                 TotalRequests = allCompensatoryHistory.Count,
@@ -297,50 +231,96 @@ public class CompensatoryController : ControllerBase
         }
     }
 
+    // ==================== HISTORIAL DEL USUARIO ACTUAL ====================
+    [HttpGet("user-history")]
+    [Authorize]
+    public async Task<IActionResult> GetUserCompensatoryHistory()
+    {
+        return await ExecuteWithAuthenticationAsync<IActionResult>(async (userId) =>
+        {
+            var userCompensatoryData = await _context.Compensatories
+                .Where(c => c.UserId == userId)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Reason,
+                    FromDateTime = c.From.DateTime,
+                    ToDateTime = c.To.DateTime,
+                    c.Status,
+                    CurrentHourDateTime = c.CurrentHour,
+                    c.UserId
+                })
+                .OrderByDescending(c => c.CurrentHourDateTime)
+                .ToListAsync();
+            if (!userCompensatoryData.Any())
+            {
+                return SuccessResponse("No se encontraron solicitudes de compensatorio.", new
+                {
+                    Statistics = new { TotalRequests = 0 },
+                    Data = new List<object>()
+                });
+            }
+
+            var tempCompensatories = userCompensatoryData.Select(c => new Compensatory
+            {
+                Id = c.Id,
+                Reason = c.Reason,
+                From = c.FromDateTime,
+                To = c.ToDateTime,
+                Status = c.Status,
+                CurrentHour = c.CurrentHourDateTime,
+                UserId = c.UserId
+            }).ToList();
+
+            var formattedHistory = CreateFormattedHistoryList(tempCompensatories, includeUserInfo: false);
+            var statistics = CalculateStatistics(formattedHistory);
+
+            return SuccessResponse("Historial de compensatorios del usuario cargado exitosamente.", new
+            {
+                Statistics = statistics,
+                Data = formattedHistory
+            });
+        });
+    }
+
     // ==================== ACEPTAR SOLICITUD (ADMIN) ====================
     [HttpPatch("accept/{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AcceptRequest(int id)
     {
-        var request = await _context.Compensatories
-            .Include(request => request.User)
-            .FirstOrDefaultAsync(request => request.Id == id);
-
-        if (request == null) return NotFound();
-
-        request.Status = "Aceptada";
-        await _context.SaveChangesAsync();
-
-        // Descontar horas del usuario
-        var duration = request.To - request.From;
-        var hoursRequested = Math.Round(duration.TotalHours, 2);
-
-        var hoursEntry = new HoursUser
+        return await TryExecuteAsync(async () =>
         {
-            UserId = request.UserId,
-            Hours = (int)-hoursRequested,
-            Status = "Aceptada",
-            CurrentHour = DateTime.Now,
-        };
+            var request = await _context.Compensatories
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
-        _context.HoursUsers.Add(hoursEntry);
-        await _context.SaveChangesAsync();
+            if (request == null) return NotFound();
 
-        // Enviar notificación
-        var userGroup = request.UserId.ToString();
-        await _hubContext.Clients.Group(userGroup)
-            .SendAsync("ReceiveNotification", new
+            if (request.Status != "Pendiente")
+                return BadRequest(new { message = "Solo se pueden aceptar solicitudes pendientes" });
+
+            // Usar método del BaseController
+            var hoursRequested = CalculateHours(request.From.DateTime, request.To.DateTime);
+            var availableHours = await GetUserAcceptedHoursAsync(request.UserId);
+
+            if (hoursRequested > availableHours)
             {
-                id = request.Id,
-                firstName = request.User?.FirstName,
-                lastName = request.User?.LastName,
-                to = request.To,
-                from = request.From,
-                reason = request.Reason,
-                type = "compAccepted"
-            });
+                return BadRequest(new
+                {
+                    message = $"El usuario no tiene suficientes horas disponibles. Disponibles: {availableHours}, solicitadas: {hoursRequested}"
+                });
+            }
 
-        return Ok(new { message = "Compensatorio aceptado y horas descontadas correctamente." });
+            string previousStatus = request.Status;
+            request.Status = "Aceptada";
+
+            var saveResult = await SaveChangesAsync("Compensatorio aceptado correctamente.");
+            if (saveResult is not OkObjectResult) return saveResult;
+
+            await SendAcceptanceNotifications(request, previousStatus, hoursRequested, availableHours);
+
+            return SuccessResponse("Compensatorio aceptado correctamente.");
+        }, "aceptar solicitud de compensatorio");
     }
 
     // ==================== RECHAZAR SOLICITUD (ADMIN) ====================
@@ -348,19 +328,19 @@ public class CompensatoryController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> RejectRequest(int id)
     {
-        var request = await _context.Compensatories
-            .Include(request => request.User)
-            .FirstOrDefaultAsync(request => request.Id == id);
+        return await TryExecuteAsync(async () =>
+        {
+            var request = await _context.Compensatories
+                .Include(request => request.User)
+                .FirstOrDefaultAsync(request => request.Id == id);
 
-        if (request == null) return NotFound();
+            if (request == null) return NotFound();
 
-        request.Status = "Rechazada";
-        await _context.SaveChangesAsync();
+            request.Status = "Rechazada";
+            var saveResult = await SaveChangesAsync("Compensatorio Rechazado");
+            if (saveResult is not OkObjectResult) return saveResult;
 
-        // Enviar notificación
-        var userGroup = request.UserId.ToString();
-        await _hubContext.Clients.Group(userGroup)
-            .SendAsync("ReceiveNotification", new
+            var notificationData = new
             {
                 id = request.Id,
                 firstName = request.User?.FirstName,
@@ -368,12 +348,34 @@ public class CompensatoryController : ControllerBase
                 to = request.To,
                 from = request.From,
                 reason = request.Reason,
-                type = "compRejected"
+                type = "compRejected",
+                rejectedDate = DateTime.Now.ToString("dd/MM/yyyy"),
+                userId = request.UserId,
+                timestamp = DateTime.UtcNow,
+                targetRole = "User",
+                targetUserIds = new List<int> { request.UserId }, // Solo al usuario específico
+                fromUserId = request.UserId // El usuario que recibe la respuesta
+            };
+
+            await _hubContext.Clients.All.SendAsync("DistributeNotification", notificationData);
+
+            await SendUserNotificationAsync(request.UserId, "ReceiveNotification", new
+            {
+                id = request.Id,
+                firstName = request.User?.FirstName,
+                lastName = request.User?.LastName,
+                to = request.To,
+                from = request.From,
+                reason = request.Reason,
+                type = "compRejected",
+                rejectedDate = DateTime.Now.ToString("dd/MM/yyyy")
             });
 
-        return Ok(new { message = "Compensatorio Rechazado" });
-    }
+            Console.WriteLine(" Notificación de compensatorio rechazado enviada con distribución automática");
 
+            return SuccessResponse("Compensatorio Rechazado");
+        }, "rechazar solicitud de compensatorio");
+    }
     // ==================== ESTADÍSTICAS GLOBALES (ADMIN) ====================
     [HttpGet("global-statistics")]
     [Authorize(Roles = "Admin")]
@@ -381,12 +383,10 @@ public class CompensatoryController : ControllerBase
     {
         try
         {
-            // Estadísticas de usuarios
             var totalUsers = _context.Users.Count();
             var adminUsers = _context.Users.Count(u => u.Role == "Admin");
             var regularUsers = totalUsers - adminUsers;
 
-            // Estadísticas de horas
             var totalHoursRegistered = _context.HoursUsers
                 .Where(h => h.Status == "Aceptada")
                 .Sum(h => h.Hours);
@@ -396,7 +396,6 @@ public class CompensatoryController : ControllerBase
             var pendingHoursRequests = _context.HoursUsers.Count(h => h.Status == "Pendiente");
             var rejectedHoursRequests = _context.HoursUsers.Count(h => h.Status == "Rechazada");
 
-            // Estadísticas de compensatorios
             var now = DateTime.UtcNow;
             var allCompensatories = _context.Compensatories.ToList();
 
@@ -458,4 +457,222 @@ public class CompensatoryController : ControllerBase
             });
         }
     }
+
+    // ==================== HORAS DISPONIBLES ====================
+    [HttpGet("available-hours")]
+    [Authorize]
+    public async Task<IActionResult> GetAvailableHours()
+    {
+        return await ExecuteWithAuthenticationAsync<IActionResult>(async (userId) =>
+        {
+            var availableHours = await GetUserAcceptedHoursAsync(userId);
+
+            var totalEarned = await _context.HoursUsers
+                .Where(h => h.UserId == userId && h.Status == "Aceptada")
+                .SumAsync(h => h.Hours);
+
+            var acceptedCompensatories = await _context.Compensatories
+                .Where(c => c.UserId == userId && c.Status == "Aceptada")
+                .Select(c => new { c.From, c.To })
+                .ToListAsync();
+
+            var totalUsed = acceptedCompensatories
+                .Sum(c => CalculateHours(c.From.DateTime, c.To.DateTime));
+
+            return SuccessResponse("Horas disponibles calculadas.", new
+            {
+                availableHours,
+                totalEarned,
+                totalUsed
+            });
+        });
+    }
+
+    // ==================== MÉTODOS HELPER PRIVADOS ====================
+
+    private async Task SendCompensatoryNotificationsInBackground(Compensatory compensatory, User user, double hoursRequested, List<int> adminUserIds)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                Console.WriteLine($" Iniciando envío de notificaciones para compensatorio ID: {compensatory.Id}");
+                Console.WriteLine($" Admin IDs recibidos: [{string.Join(", ", adminUserIds)}]");
+
+                var notificationData = new
+                {
+                    id = compensatory.Id,
+                    firstName = user.FirstName,
+                    lastName = user.LastName,
+                    from = compensatory.From,
+                    to = compensatory.To,
+                    reason = compensatory.Reason,
+                    type = "compRequest",
+                    hoursRequested = hoursRequested,
+                    userId = user.Id,
+                    timestamp = DateTime.UtcNow,
+                    targetRole = "Admin",
+                    targetUserIds = adminUserIds,
+                    fromUserId = user.Id
+                };
+
+                Console.WriteLine($" Datos de notificación: {System.Text.Json.JsonSerializer.Serialize(notificationData)}");
+
+                await SendNotificationToAllAdminsAsync(notificationData);
+
+                await _emailController.SendEmail(
+                    "hardworker.umg@gmail.com",
+                    "Nueva Solicitud de Compensatorio",
+                    $@"<h3>Nueva Solicitud de Compensatorio</h3>
+                   <p><strong>Empleado:</strong> {user.FirstName} {user.LastName}</p>
+                   <p><strong>Desde:</strong> {compensatory.From:dd/MM/yyyy HH:mm}</p>
+                   <p><strong>Hasta:</strong> {compensatory.To:dd/MM/yyyy HH:mm}</p>
+                   <p><strong>Horas solicitadas:</strong> {hoursRequested}</p>
+                   <p><strong>Razón:</strong> {compensatory.Reason}</p>"
+                );
+
+                Console.WriteLine(" Notificaciones de compensatorio enviadas correctamente");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($" Error enviando notificaciones: {ex.Message}");
+                Console.WriteLine($" Stack trace: {ex.StackTrace}");
+            }
+        });
+    }
+
+    private async Task SendAcceptanceNotifications(Compensatory request, string previousStatus, double hoursRequested, double availableHours)
+    {
+        var newAvailableHours = Math.Round(availableHours - hoursRequested, 2);
+        var userGroup = request.UserId.ToString();
+
+        var updateData = new
+        {
+            compensatoryId = request.Id,
+            newStatus = request.Status,
+            previousStatus,
+            hoursRequested,
+            reason = request.Reason,
+            userId = request.UserId,
+            from = request.From,
+            to = request.To
+        };
+
+        await _hubContext.Clients.Group(userGroup).SendAsync("UpdateCompensatoryStatus", updateData);
+        await _hubContext.Clients.Group(userGroup).SendAsync("UpdateAvailableHours", newAvailableHours);
+
+        var notificationData = new
+        {
+            id = request.Id,
+            firstName = request.User?.FirstName,
+            lastName = request.User?.LastName,
+            from = request.From,
+            to = request.To,
+            reason = request.Reason,
+            hoursUsed = hoursRequested,
+            availableHours = newAvailableHours,
+            type = "compAccepted",
+            acceptedDate = DateTime.Now.ToString("dd/MM/yyyy"),
+            userId = request.UserId,
+            timestamp = DateTime.UtcNow,
+            targetRole = "User",
+            targetUserIds = new List<int> { request.UserId }, // Solo al usuario específico
+            fromUserId = request.UserId // El usuario que recibe la respuesta
+        };
+
+        await _hubContext.Clients.All.SendAsync("DistributeNotification", notificationData);
+
+        await SendUserNotificationAsync(request.UserId, "ReceiveNotification", new
+        {
+            id = request.Id,
+            firstName = request.User?.FirstName,
+            lastName = request.User?.LastName,
+            from = request.From,
+            to = request.To,
+            reason = request.Reason,
+            hoursUsed = hoursRequested,
+            availableHours = newAvailableHours,
+            type = "compAccepted",
+            acceptedDate = DateTime.Now.ToString("dd/MM/yyyy")
+        });
+
+        Console.WriteLine(" Notificación de compensatorio aceptado enviada con distribución automática");
+    }
+
+    private List<object> CreateFormattedHistoryList(List<Compensatory> compensatories, bool includeUserInfo)
+    {
+        var now = DateTime.UtcNow;
+
+        return compensatories.Select(c =>
+        {
+            var dynamicStatus = CalculateDynamicStatus(c.Status ?? string.Empty, c.From.DateTime, c.To.DateTime);
+            var hoursRequested = CalculateHours(c.From.DateTime, c.To.DateTime);
+
+            var baseObject = new
+            {
+                Id = c.Id,
+                Reason = c.Reason,
+                From = FormatDateTime(c.From.DateTime),
+                To = FormatDateTime(c.To.DateTime),
+                Status = c.Status,
+                DynamicStatus = dynamicStatus,
+                CurrentHour = FormatDateTime(c.CurrentHour),
+                HoursRequested = hoursRequested,
+                DaysFromRequest = Math.Round((now - c.CurrentHour).TotalDays, 1),
+                IsActive = dynamicStatus == "En curso",
+                IsPending = c.Status == "Pendiente",
+                IsFinished = dynamicStatus == "Finalizado",
+                IsExpired = c.Status == "Aceptada" && now >= c.To.DateTime,
+                RequestDate = c.CurrentHour.ToString("dd/MM/yyyy"),
+                TimeRange = $"{c.From.ToString("dd/MM/yyyy HH:mm")} - {c.To.ToString("dd/MM/yyyy HH:mm")}"
+            };
+
+            if (includeUserInfo)
+            {
+                return new
+                {
+                    baseObject.Id,
+                    FirstName = c.User?.FirstName ?? "N/A",
+                    LastName = c.User?.LastName ?? "N/A",
+                    baseObject.Reason,
+                    baseObject.From,
+                    baseObject.To,
+                    baseObject.Status,
+                    baseObject.DynamicStatus,
+                    baseObject.CurrentHour,
+                    UserId = c.UserId,
+                    baseObject.HoursRequested,
+                    UserFullName = $"{c.User?.FirstName ?? "N/A"} {c.User?.LastName ?? "N/A"}",
+                    baseObject.DaysFromRequest,
+                    baseObject.IsActive,
+                    baseObject.IsPending,
+                    baseObject.IsExpired
+                };
+            }
+
+            return (object)baseObject;
+        }).ToList();
+    }
+
+    private object CalculateStatistics(List<object> formattedHistory)
+    {
+        return new
+        {
+            TotalRequests = formattedHistory.Count,
+            PendingRequests = formattedHistory.Count(r => GetPropertyValue(r, "Status")?.ToString() == "Pendiente"),
+            AcceptedRequests = formattedHistory.Count(r => GetPropertyValue(r, "Status")?.ToString() == "Aceptada"),
+            RejectedRequests = formattedHistory.Count(r => GetPropertyValue(r, "Status")?.ToString() == "Rechazada"),
+            ActiveRequests = formattedHistory.Count(r => GetPropertyValue(r, "DynamicStatus")?.ToString() == "En curso"),
+            FinishedRequests = formattedHistory.Count(r => GetPropertyValue(r, "DynamicStatus")?.ToString() == "Finalizado"),
+            TotalHoursRequested = formattedHistory.Sum(r => Convert.ToDouble(GetPropertyValue(r, "HoursRequested") ?? 0)),
+            TotalActiveHours = formattedHistory
+                .Where(r => GetPropertyValue(r, "DynamicStatus")?.ToString() == "En curso")
+                .Sum(r => Convert.ToDouble(GetPropertyValue(r, "HoursRequested") ?? 0))
+        };
+    }
+    private static object? GetPropertyValue(object obj, string propertyName)
+    {
+        return obj.GetType().GetProperty(propertyName)?.GetValue(obj);
+    }
+
 }

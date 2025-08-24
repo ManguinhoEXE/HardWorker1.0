@@ -9,5 +9,7 @@ export interface Notification {
     to?: string;
     reason?: string;
     acceptedDate?: string;
-    rejectedDate?: string; 
+    rejectedDate?: string;
+    isRead?: boolean;
+    timestamp?: Date;
 }

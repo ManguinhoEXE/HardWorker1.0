@@ -21,7 +21,6 @@ namespace HardWorker.Controller
         // ==================== GENERAR TOKEN JWT ====================
         public string GenerateJwtToken(string username)
         {
-            // Obtener configuración JWT desde appsettings.json
             var jwtSettings = _configuration.GetSection("Jwt");
             var keyString = jwtSettings["Key"];
             var issuer = jwtSettings["Issuer"];
@@ -29,7 +28,6 @@ namespace HardWorker.Controller
 
             Console.WriteLine($"Issuer: {issuer}, Audience: {audience}");
 
-            // Validar configuración obligatoria
             if (string.IsNullOrEmpty(keyString))
                 throw new ArgumentNullException(nameof(keyString), "JWT key is not configured.");
             if (string.IsNullOrEmpty(issuer))
@@ -37,25 +35,22 @@ namespace HardWorker.Controller
             if (string.IsNullOrEmpty(audience))
                 throw new ArgumentNullException(nameof(audience), "JWT audience is not configured.");
 
-            // Crear clave simétrica y credenciales de firma
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // Obtener el usuario de la base de datos
             var user = _context.Users.FirstOrDefault(u => u.Username == username);
             if (user is null)
                 throw new Exception("User not found.");
 
-            // Crear claims (información codificada en el token)
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, username),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), 
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),         
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),   
+                new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, (user.Role ?? "User").ToString()),
                             };
 
-            // Crear el token con todos los parámetros requeridos
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
@@ -64,7 +59,6 @@ namespace HardWorker.Controller
                 signingCredentials: creds
             );
 
-            // Serializar y devolver el token como string
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }

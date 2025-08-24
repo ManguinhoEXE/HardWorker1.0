@@ -52,7 +52,6 @@ export class BoardComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Verificar la sesión directamente desde el backend
     this.verifySessionFromBackend();
   }
 
@@ -60,30 +59,23 @@ export class BoardComponent implements OnInit {
    * ==================== 4. AUTENTICACIÓN Y SESIÓN ====================
    */
 
-  /**
-   * Verifica la sesión directamente desde el backend y carga los datos según el rol
-   */
   private verifySessionFromBackend(): void {
     this.authService.verifySession().subscribe({
       next: (userData: any) => {
-        // Determinar rol de usuario
         if (userData && userData.role) {
           this.isAdmin = userData.role === 'Admin';
           
-          // Cargar vista correspondiente según rol
           if (this.isAdmin) {
             this.loadAdminRequests();
           } else {
             this.loadCompensatoryRequests();
           }
         } else {
-          // Por defecto, cargar vista de usuario regular
           this.isAdmin = false;
           this.loadCompensatoryRequests();
         }
       },
       error: () => {
-        // En caso de error, mostrar vista de usuario regular
         this.isAdmin = false;
         this.loadCompensatoryRequests();
       }
@@ -94,9 +86,6 @@ export class BoardComponent implements OnInit {
    * ==================== 5. CARGA DE DATOS ====================
    */
 
-  /**
-   * Carga todas las solicitudes para vista de administrador
-   */
   loadAdminRequests(): void {
     this.isLoading = true;
     this.errorMessage = null;
@@ -115,9 +104,6 @@ export class BoardComponent implements OnInit {
     });
   }
 
-  /**
-   * Carga las solicitudes para usuarios regulares y las filtra por estado
-   */
   loadCompensatoryRequests(): void {
     this.isLoading = true;
     this.errorMessage = null;
@@ -126,7 +112,6 @@ export class BoardComponent implements OnInit {
       next: (data: CompensatoryRequest[]) => {
         this.allRequests = data;
         
-        // Filtrar solicitudes según su estado
         this.inProgressRequests = this.allRequests.filter(request => request.status === 'En curso');
         this.acceptedRequests = this.allRequests.filter(request => request.status === 'Aceptada');
         
@@ -140,9 +125,6 @@ export class BoardComponent implements OnInit {
     });
   }
 
-  /**
-   * Recarga los datos según el tipo de usuario
-   */
   refreshData(): void {
     if (this.isAdmin) {
       this.loadAdminRequests();
@@ -155,36 +137,24 @@ export class BoardComponent implements OnInit {
    * ==================== 6. FILTROS DE ADMINISTRADOR ====================
    */
 
-  /**
-   * Aplica todos los filtros activos a las solicitudes de administrador
-   */
   applyFilters(): void {
     this.filteredRequests = this.adminRequests.filter(request => {
-      // Combinar todos los criterios de filtrado
       const fullName = `${request.firstName} ${request.lastName}`.toLowerCase();
       
       return (
-        // Filtro por usuario
         (!this.userFilter || fullName.includes(this.userFilter.toLowerCase())) &&
         
-        // Filtro por estado original
         (!this.statusFilter || request.status === this.statusFilter) &&
         
-        // Filtro por estado dinámico
         (!this.dynamicStatusFilter || request.dynamicStatus === this.dynamicStatusFilter) &&
         
-        // Filtro por fecha desde
         (!this.dateFromFilter || new Date(request.from) >= new Date(this.dateFromFilter)) &&
         
-        // Filtro por fecha hasta
         (!this.dateToFilter || new Date(request.to) <= new Date(this.dateToFilter))
       );
     });
   }
 
-  /**
-   * Restablece todos los filtros a su valor predeterminado
-   */
   clearFilters(): void {
     this.userFilter = '';
     this.statusFilter = '';
@@ -198,9 +168,6 @@ export class BoardComponent implements OnInit {
    * ==================== 7. UTILIDADES DE UI ====================
    */
 
-  /**
-   * Obtiene la clase CSS apropiada según el estado de la solicitud
-   */
   getStatusClass(status: string): string {
     switch (status) {
       case 'Aceptada':
@@ -219,9 +186,6 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  /**
-   * Función trackBy para optimizar el rendimiento de las listas ngFor
-   */
   trackByRequestId(index: number, request: AdminCompensatoryRequest): number {
     return request.id;
   }

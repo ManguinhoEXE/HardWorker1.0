@@ -6,14 +6,11 @@ namespace Hardworker.Hubs
 {
     public class NotificationHub : Hub
     {
-        // Método que será llamado por el servidor para notificar al administrador
         public async Task NotifyAdmin(string message)
         {
-            // Envia el mensaje al grupo "Admin"
             await Clients.Group("Admin").SendAsync("ReceiveNotification", message);
         }
 
-        // Se ejecuta cuando un cliente se conecta al hub
         public override async Task OnConnectedAsync()
         {
             var userId = Context.User?
@@ -30,15 +27,12 @@ namespace Hardworker.Hubs
             await base.OnConnectedAsync();
         }
 
-        //actualizar horas totales del usuario en tiempo real
         public async Task UpdateUserHoursTotal(string userId, int newTotalHours)
         {
-            // Enviar SOLO las nuevas horas totales al usuario específico
             await Clients.User(userId).SendAsync("UpdateHoursTotal", newTotalHours);
             Console.WriteLine($"[Hub] Actualizando horas totales de usuario {userId}: {newTotalHours}h");
         }
 
-        // Se ejecuta cuando un cliente se desconecta del hub
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var user = Context.User;

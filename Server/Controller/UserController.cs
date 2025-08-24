@@ -1,55 +1,35 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HardWorker.Data;
+using HardWorker.Server.Controller;
+using Microsoft.AspNetCore.SignalR;
+using Hardworker.Hubs;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class UserController : ControllerBase
+public class UserController : BaseController
 {
-    private readonly ApplicationDbContext _context;
-
-    public UserController(ApplicationDbContext context)
+    public UserController(ApplicationDbContext context, IHubContext<NotificationHub> hubContext)
+        : base(context, hubContext)
     {
-        _context = context;
     }
 
     // ==================== OBTENER DATOS DEL USUARIO AUTENTICADO ====================
     [HttpGet("getdata")]
-    public IActionResult GetUser()
+    public async Task<IActionResult> GetUser()
     {
-        // Extraer ID del usuario desde el token JWT
-        var userIdClaim = User.Claims.FirstOrDefault(c =>
-            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-            && int.TryParse(c.Value, out _))?.Value;
-
-        // Validar autenticación
-        var token = Request.Cookies["token"];
-        if (string.IsNullOrEmpty(token))
+        return await ExecuteWithUserValidationAsync(async (user) =>
         {
-            return Unauthorized(new { message = "Usuario no autenticado." });
-        }
-
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized(new { message = "No se pudo obtener el ID del usuario desde el token." });
-        }
-
-        // Buscar el usuario en base de datos
-        var user = _context.Users.FirstOrDefault(u => u.Id == userId);
-        if (user == null)
-        {
-            return NotFound(new { message = "Usuario no encontrado." });
-        }
-
-        // Devolver datos básicos del usuario
-        return Ok(new
-        {
-            user.Id,
-            user.FirstName,
-            user.LastName,
-            user.Profileimage,
-            Role = user.Role ?? "User"
+            return Ok(new
+            {
+                user.Id,
+                user.FirstName,
+                user.LastName,
+                user.Profileimage,
+                Role = user.Role ?? "User"
+            });
         });
     }
 
@@ -57,70 +37,55 @@ public class UserController : ControllerBase
     [HttpPost("update-img-profile")]
     public async Task<IActionResult> UpdateProfileImage([FromForm] IFormFile file)
     {
-        // Validar archivo recibido
-        if (file == null || file.Length == 0)
+        return await TryExecuteAsync(async () =>
         {
-            return BadRequest(new { message = "Archivo no válido." });
-        }
+            return await ExecuteWithUserValidationAsync(async (user) =>
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new { message = "Archivo no válido." });
+                }
 
-        // Obtener ID del usuario desde el token JWT
-        var userIdClaim = User.Claims.FirstOrDefault(c =>
-            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-            && int.TryParse(c.Value, out _))?.Value;
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
 
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized(new { message = "Usuario no autenticado." });
-        }
+                var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
 
-        // Buscar el usuario en la base de datos
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null)
-        {
-            return NotFound(new { message = "Usuario no encontrado." });
-        }
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
 
-        // Preparar directorio de subida
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
-        if (!Directory.Exists(uploadsFolder))
-        {
-            Directory.CreateDirectory(uploadsFolder);
-        }
+                var baseUrl = $"{this.Request.Scheme}://{this.Request.Host.Value}";
+                user.Profileimage = $"{baseUrl}/uploads/{fileName}";
 
-        // Generar nombre único para el archivo
-        var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
+                var saveResult = await SaveChangesAsync("Imagen de perfil actualizada con éxito.");
+                if (saveResult is not OkObjectResult) return saveResult;
 
-        // Guardar el archivo en el servidor
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
+                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var imageUrlWithCacheBuster = $"{user.Profileimage}?v={timestamp}";
 
-        // Actualizar URL de la imagen en la base de datos
-        var baseUrl = $"{this.Request.Scheme}://{this.Request.Host.Value}";
-        user.Profileimage = $"{baseUrl}/uploads/{fileName}";
-
-        await _context.SaveChangesAsync();
-
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var imageUrlWithCacheBuster = $"{user.Profileimage}?v={timestamp}";
-
-        return Ok(new
-        {
-            message = "Imagen de perfil actualizada con éxito.",
-            profileimage = imageUrlWithCacheBuster 
-        });
+                return Ok(new
+                {
+                    message = "Imagen de perfil actualizada con éxito.",
+                    profileimage = imageUrlWithCacheBuster 
+                });
+            });
+        }, "actualizar imagen de perfil");
     }
 
     // ==================== OBTENER TODOS LOS USUARIOS (ADMIN) ====================
     [HttpGet("all-users")]
-    [Authorize(Roles = "Admin")]
-    public IActionResult GetAllUsers()
+    [Authorize(Roles = "Admin,Super")]
+    public async Task<IActionResult> GetAllUsers()
     {
-        try
+        return await TryExecuteAsync(async () =>
         {
-            var users = _context.Users
+            var users = await _context.Users
                 .Select(u => new
                 {
                     Id = u.Id,
@@ -129,7 +94,6 @@ public class UserController : ControllerBase
                     Username = u.Username,
                     ProfileImage = u.Profileimage,
                     Role = u.Role ?? "User",
-                    // Estadísticas básicas de cada usuario
                     TotalHoursRequests = _context.HoursUsers.Count(h => h.UserId == u.Id),
                     TotalCompensatoryRequests = _context.Compensatories.Count(c => c.UserId == u.Id),
                     PendingHoursRequests = _context.HoursUsers.Count(h => h.UserId == u.Id && h.Status == "Pendiente"),
@@ -144,7 +108,7 @@ public class UserController : ControllerBase
                         .FirstOrDefault()
                 })
                 .OrderBy(u => u.FirstName)
-                .ToList();
+                .ToListAsync();
 
             return Ok(new
             {
@@ -152,33 +116,24 @@ public class UserController : ControllerBase
                 TotalUsers = users.Count,
                 Data = users
             });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
-            {
-                message = "Error al obtener la lista de usuarios.",
-                error = ex.Message
-            });
-        }
+        }, "obtener lista de usuarios");
     }
 
     // ==================== OBTENER DASHBOARD DETALLADO DE UN USUARIO (ADMIN) ====================
     [HttpGet("user-dashboard/{userId}")]
     [Authorize(Roles = "Admin")]
-    public IActionResult GetUserDashboard(int userId)
+    public async Task<IActionResult> GetUserDashboard(int userId)
     {
-        try
+        return await TryExecuteAsync(async () =>
         {
-            // Obtener información del usuario
-            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
-            if (user == null)
+            if (!await UserExistsAsync(userId))
             {
                 return NotFound(new { message = "Usuario no encontrado." });
             }
 
-            // Obtener historial de horas del usuario
-            var hourHistory = _context.HoursUsers
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            var hourHistory = await _context.HoursUsers
                 .Where(h => h.UserId == userId)
                 .OrderByDescending(h => h.CurrentHour)
                 .Select(h => new
@@ -190,47 +145,35 @@ public class UserController : ControllerBase
                     CurrentHour = h.CurrentHour.ToString("yyyy-MM-ddTHH:mm:ss"),
                     FormattedDate = h.CurrentHour.ToString("MMMM dd, yyyy")
                 })
-                .ToList();
+                .ToListAsync();
 
-            // Obtener historial de compensatorios del usuario
             var now = DateTime.UtcNow;
-            var compensatoryHistory = _context.Compensatories
+            var compensatoryData = await _context.Compensatories
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.CurrentHour)
-                .ToList()
+                .ToListAsync();
+
+            var compensatoryHistory = compensatoryData
                 .Select(c =>
                 {
-                    // Calcular estado dinámico del compensatorio
-                    string dynamicStatus = c.Status ?? string.Empty;
-                    if (c.Status == "Aceptada")
-                    {
-                        if (now >= c.From && now < c.To)
-                            dynamicStatus = "En curso";
-                        else if (now >= c.To)
-                            dynamicStatus = "Finalizado";
-                        else if (now < c.From)
-                            dynamicStatus = "Programado";
-                    }
-
-                    var duration = c.To - c.From;
-                    var hoursRequested = Math.Round(duration.TotalHours, 2);
+                    string dynamicStatus = CalculateDynamicStatus(c.Status ?? string.Empty, c.From.DateTime, c.To.DateTime);
+                    var hoursRequested = CalculateHours(c.From.DateTime, c.To.DateTime);
 
                     return new
                     {
                         Id = c.Id,
                         Reason = c.Reason,
-                        From = c.From.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        To = c.To.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        From = FormatDateTime(c.From.DateTime),
+                        To = FormatDateTime(c.To.DateTime),
                         Status = c.Status,
                         DynamicStatus = dynamicStatus,
-                        CurrentHour = c.CurrentHour.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        CurrentHour = FormatDateTime(c.CurrentHour),
                         HoursRequested = hoursRequested,
                         DaysFromRequest = Math.Round((now - c.CurrentHour).TotalDays, 1)
                     };
                 })
                 .ToList();
 
-            // Calcular estadísticas consolidadas del usuario
             var totalHoursRegistered = hourHistory.Where(h => h.Status == "Aceptada").Sum(h => h.Hours);
             var totalHoursUsed = compensatoryHistory.Where(c => c.Status == "Aceptada").Sum(c => c.HoursRequested);
             var availableHours = totalHoursRegistered - totalHoursUsed;
@@ -257,7 +200,7 @@ public class UserController : ControllerBase
                 Message = "Dashboard del usuario obtenido exitosamente.",
                 User = new
                 {
-                    Id = user.Id,
+                    Id = user!.Id,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Username = user.Username,
@@ -268,14 +211,6 @@ public class UserController : ControllerBase
                 HourHistory = hourHistory,
                 CompensatoryHistory = compensatoryHistory
             });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
-            {
-                message = "Error al obtener el dashboard del usuario.",
-                error = ex.Message
-            });
-        }
+        }, "obtener dashboard del usuario");
     }
 }

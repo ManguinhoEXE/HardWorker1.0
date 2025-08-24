@@ -25,23 +25,14 @@ export class UserService {
      * ==================== 4. GESTIÓN DE DATOS DE USUARIO ====================
      */
 
-    /**
-     * Obtiene los datos del usuario actual
-     */
     getUser(): Observable<UserData> {
         return this.http.get<UserData>(`${this.apiUrl}/getdata`, this.httpOptions);
     }
 
-    /**
-     * Obtiene todos los usuarios (solo administradores)
-     */
     getAllUsers(): Observable<User[]> {
         return this.http.get<User[]>(`${this.apiUrl}/all-users`, this.httpOptions);
     }
 
-    /**
-     * Obtiene el dashboard de un usuario específico (solo administradores)
-     */
     getUserDashboard(userId: number): Observable<UserDashboard> {
         return this.http.get<UserDashboard>(`${this.apiUrl}/user-dashboard/${userId}`, this.httpOptions);
     }
@@ -50,9 +41,6 @@ export class UserService {
      * ==================== 5. GESTIÓN DE PERFIL ====================
      */
 
-    /**
-     * Sube una nueva imagen de perfil
-     */
     uploadProfileImage(formData: FormData): Observable<UploadImageResponse> {
         return this.http.post<UploadImageResponse>(`${this.apiUrl}/update-img-profile`, formData, this.httpOptions);
     }

@@ -2,135 +2,114 @@
 <div class="d-flex flex-column align-items-center sidebar">
 
   <!-- 1.1 Botón de cierre de sesión -->
-  <button class="btn btn-danger" (click)="logout()"></button>
+  <button class="btn btn-danger" (click)="logout()">
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
 
   <!-- ==================== 2. SECCIÓN DE PERFIL ==================== -->
   <div class="profile-image-container">
-    <!-- Siempre mostrar imagen, con fallback automático -->
-    <img [src]="profileImage || defaultProfileImage" alt="Profile Image" class="profile-image" />
-    <input type="file" #fileInput hidden />
+    <img [src]="profileImage || defaultProfileImage" alt="Profile Image" class="profile-image"
+      (click)="fileInput.click()" (error)="onImageError($event)" />
+    <input type="file" #fileInput (change)="onFileSelected($event)" hidden />
   </div>
 
   <!-- Nombre del usuario -->
   <p class="text-white fw-bold mt-2">{{firstName}} {{lastName}}</p>
 
-  <!-- ==================== 3. NAVEGACIÓN ==================== -->
+  <!-- ==================== 3. NAVEGACIÓN DINÁMICA ==================== -->
   <nav class="nav flex-column">
-    <!-- 3.1 Botones de navegación principal -->
-    <button class="btn btn-light w-100 my-1" routerLink="/inicio" routerLinkActive="active-nav-button">
-      Mis Horas
-    </button>
-    <button class="btn btn-secondary w-100 my-1" routerLink="/tablero" routerLinkActive="active-nav-button-board">
-      Tablero
-    </button>
+
+    <!-- Usuario -->
+    <ng-container *ngIf="isUser()">
+      <button class="btn btn-light w-100 my-1" routerLink="/inicio" routerLinkActive="active-nav-button">
+        <i class="fas fa-clock me-2"></i>
+        Mis Horas
+      </button>
+      <button class="btn btn-secondary w-100 my-1" routerLink="/tablero" routerLinkActive="active-nav-button-board">
+        <i class="fas fa-user me-2"></i>
+        Tablero
+      </button>
+    </ng-container>
+
+    <!-- Admin -->
+    <ng-container *ngIf="isAdmin()">
+      <button class="btn btn-light w-100 my-1" routerLink="/inicio" routerLinkActive="active-nav-button">
+        <i class="fas fa-users me-2"></i>
+        Usuarios
+      </button>
+      <button class="btn btn-secondary w-100 my-1" routerLink="/tablero" routerLinkActive="active-nav-button-board">
+        <i class="fas fa-chart-dashboard me-2"></i>
+        Tablero
+      </button>
+    </ng-container>
+
+    <!-- Super Admin -->
+    <ng-container *ngIf="isSuper()">
+      <button class="btn btn-light w-100 my-1" routerLink="/superadmin" routerLinkActive="active-nav-button">
+        <i class="fas fa-users-cog me-2"></i>
+        Usuarios
+      </button>
+      <button class="btn btn-secondary w-100 my-1" routerLink="/registro" routerLinkActive="active-nav-button">
+        <i class="fas fa-user-plus me-2"></i>
+        Crear
+      </button>
+    </ng-container>
 
     <!-- ==================== 4. ÁREA DE NOTIFICACIONES ==================== -->
     <div class="d-flex justify-content-center align-items-center mt-2">
       <div class="card info-card p-3 shadow">
+
         <!-- Lista de notificaciones -->
-        <ng-container *ngFor="let n of notifications">
-          <!-- 4.1 Tarjeta de notificación individual -->
-          <div class="card p-2 shadow notification-card mb-3"
-            [class.disabled]="n.type==='hoursAccepted' || n.type==='hoursRejected' || n.type==='compAccepted' || n.type==='compRejected'"
-            [style.cursor]="n.type==='hoursRequest' || n.type==='compRequest' ? 'pointer' : 'default'"
-            (click)="openModal(n)">
+        <div *ngFor="let n of notifications" class="card p-2 shadow notification-card mb-3 position-relative"
+          [class.disabled]="!isActionableNotification(n.type) && userRole === 'Admin'"
+          [style.cursor]="getNotificationCursor(n)" (click)="openModal(n)">
 
-            <!-- Encabezado de notificación -->
-            <h6 class="fw-bold mb-1">
-              {{ n.firstName }} {{ n.lastName }}
-              <span class="status-dot"></span>
-            </h6>
+          <span class="status-dot position-absolute" [class.read]="n.isRead" [class.unread]="!n.isRead"></span>
+          <!-- Encabezado -->
+          <h6 class="fw-bold mb-1">
+            {{ n.firstName }} {{ n.lastName }}
+          </h6>
 
-            <!-- 4.2 Contenido según tipo de notificación -->
-            <!-- Solicitud de horas -->
-            <p *ngIf="n.type==='hoursRequest'">
-              Ha solicitado <strong>{{n.hours}} horas</strong><br>
-              "{{n.description}}"
-
-            </p>
-
-            <!-- Horas aceptadas -->
-            <p *ngIf="n.type==='hoursAccepted'">
-              Sus <strong>{{n.hours}} horas</strong> han sido aceptadas. <br>
-            <strong>{{ n.acceptedDate }}</strong>
-            </p>
-
-            <!-- Horas rechazadas -->
-            <p *ngIf="n.type==='hoursRejected'">
-              Sus <strong>{{n.hours}} horas</strong> han sido Rechazadas. <br>
-              <strong>{{ n.rejectedDate }}</strong>
-            </p>
-
-            <!-- Solicitud de compensatorio -->
-            <p *ngIf="n.type==='compRequest'">
-              De <strong>{{ n.from | date:'short' }}</strong> a <strong>{{ n.to | date:'short' }}</strong><br>
-              razon: "{{ n.reason }}"
-            </p>
-
-            <!-- Compensatorio aceptado -->
-            <p *ngIf="n.type==='compAccepted'">
-              Su compensatorio de <strong>{{ n.from | date:'short' }}</strong> a
-              <strong>{{ n.to | date:'short' }}</strong> ha sido aceptado.<br>
-              Razon: "{{ n.reason }}"
-            </p>
-
-            <!-- Compensatorio rechazado -->
-            <p *ngIf="n.type==='compRejected'">
-              Su compensatorio de <strong>{{ n.from | date:'short' }}</strong> a
-              <strong>{{ n.to | date:'short' }}</strong> ha sido rechazado.<br>
-              Razon: "{{ n.reason }}"
-            </p>
-          </div>
-        </ng-container>
+          <!-- Contenido dinámico por tipo -->
+          <p [innerHTML]="getNotificationContent(n)"></p>
+        </div>
       </div>
     </div>
   </nav>
 </div>
 
 <!-- ==================== 5. MODAL DE NOTIFICACIONES ==================== -->
-<div class="custom-modal-backdrop" *ngIf="selectedNotification">
-  <div class="custom-modal">
-    <!-- Botón de cierre -->
-    <button class="close-btn" (click)="closeModal()">×</button>
+<div *ngIf="selectedNotification" class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content notification-modal" (click)="$event.stopPropagation()">
 
-    <!-- 5.1 Modal para solicitud de horas -->
-    <ng-container *ngIf="selectedNotification.type==='hoursRequest'">
-      <h5 class="fw-bold mb-3 text-center">Solicitud de Horas</h5>
-      <h6>{{ selectedNotification.firstName }} {{ selectedNotification.lastName }}</h6>
-      <p>
-        Ha solicitado <strong>{{ selectedNotification.hours }}</strong> horas<br>
-        "{{ selectedNotification.description }}"
-      </p>
-      <!-- Botones de acción -->
-      <div class="d-flex justify-content-between mt-4">
-        <button class="btn btn-success w-50 me-2" (click)="acceptHourRequest(selectedNotification.id)">
-          Aceptar
-        </button>
-        <button class="btn btn-danger w-50 ms-2" (click)="rejectHourRequest(selectedNotification.id)">
-          Rechazar
-        </button>
-      </div>
-    </ng-container>
+    <!-- Cabecera del modal -->
+    <div class="modal-header">
+      <h3>
+        <i [class]="getModalIcon()"></i>
+        {{ getModalTitle() }}
+      </h3>
+      <button class="btn-close" (click)="closeModal()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
 
-    <!-- 5.2 Modal para solicitud de compensatorio -->
-    <ng-container *ngIf="selectedNotification.type==='compRequest'">
-      <h5 class="fw-bold mb-3 text-center">Solicitud de Compensatorio</h5>
+    <!-- Contenido del modal -->
+    <div class="modal-body">
+      <h5 class="fw-bold mb-3 text-center">{{ getModalTitle() }}</h5>
       <h6>{{ selectedNotification.firstName }} {{ selectedNotification.lastName }}</h6>
-      <p>
-        Ha solicitado un compensatorio:<br>
-        De <strong>{{ selectedNotification.from | date:'short' }}</strong><br>
-        Hasta <strong>{{ selectedNotification.to | date:'short' }}</strong><br>
-        Razon: "{{ selectedNotification.reason }}"
-      </p>
-      <!-- Botones de acción -->
-      <div class="d-flex justify-content-between mt-4">
-        <button class="btn btn-success w-50 me-2" (click)="acceptCompRequest(selectedNotification.id)">
-          Aceptar
-        </button>
-        <button class="btn btn-danger w-50 ms-2" (click)="rejectCompRequest(selectedNotification.id)">
-          Rechazar
-        </button>
-      </div>
-    </ng-container>
+      <p [innerHTML]="getModalContent()"></p>
+    </div>
+
+    <!-- Footer con botones de acción -->
+    <div class="modal-actions" *ngIf="isActionableNotification(selectedNotification.type)">
+      <button class="btn btn-danger" (click)="rejectRequest()">
+        <i class="fas fa-times-circle"></i>
+        Rechazar
+      </button>
+      <button class="btn btn-success" (click)="acceptRequest()">
+        <i class="fas fa-check-circle"></i>
+        Aceptar
+      </button>
+    </div>
   </div>
 </div>

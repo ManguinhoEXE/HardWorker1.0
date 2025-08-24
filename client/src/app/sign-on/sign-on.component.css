@@ -1,5 +1,11 @@
-.container {
+/* ==================== 1. CONTENEDORES PRINCIPALES ==================== */
+/* Combinando gradientes duplicados */
+.container,
+.container-style {
     background: linear-gradient(#142066, #01ACA9);
+}
+
+.container {
     height: 100vh;
     max-width: 4000px;
     margin: 0;
@@ -17,11 +23,10 @@
     height: 100%;
     width: 100%;
     max-height: 580px;
-    margin-left: 10PX;
-    background: linear-gradient(#142066, #01ACA9);
-
+    margin-left: 10px;
 }
 
+/* ==================== 2. ELEMENTOS DE FORMULARIO ==================== */
 .form-label {
     font-weight: bold;
     color: #333;
@@ -38,6 +43,7 @@
     box-shadow: 0px 0px 8px rgba(0, 123, 255, 0.5);
 }
 
+/* ==================== 3. BOTONES ==================== */
 .btn-light {
     background-color: #142066;
     color: #ffffff;
@@ -48,12 +54,81 @@
     background-color: #01ACA9;
 }
 
-a {
-    color: #01ACA9;
-    font-weight: bold;
+/* ==================== 4. ALERTAS Y NOTIFICACIONES ==================== */
+
+.alert-container {
+    position: relative;
 }
 
-a:hover {
-    color: #142066;
-    text-decoration: underline;
+.alert {
+    position: absolute;
+    top: -120px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin: 0;
+    transform: translateY(-100%);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+    font-weight: 500;
+    animation: slideDown 0.3s ease-out;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    border-left: 4px solid #dc3545;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    color: white;
+    border-left: 4px solid #17a2b8;
+}
+
+.alert .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+/* ==================== 6. ESTADOS DE LOADING ==================== */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.form-control:disabled {
+    background-color: #e9ecef;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-light:disabled {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: #ffffff !important;
+}
+
+.spinner-border {
+    animation: spinner-border 0.75s linear infinite;
+}
+
+.alert {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }

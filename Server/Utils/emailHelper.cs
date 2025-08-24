@@ -14,7 +14,6 @@ namespace HardWorker.Server.Utils
 
         private List<string> _destinatarios = new List<string>();
 
-        /// Constructor que inicializa EmailHelper con la configuración desde appsettings.json
         public EmailHelper(IConfiguration configuration)
         {
             var emailSettings = configuration.GetSection("EmailSettings");
@@ -30,27 +29,23 @@ namespace HardWorker.Server.Utils
 
         }
 
-        /// Agrega un destinatario al correo.
         public void AddDestinatario(string email)
         {
             if (!string.IsNullOrWhiteSpace(email) && !_destinatarios.Contains(email))
                 _destinatarios.Add(email);
         }
 
-        /// Agrega múltiples destinatarios al correo.
         public void AddDestinatarios(IEnumerable<string> emails)
         {
             foreach (var email in emails)
                 AddDestinatario(email);
         }
 
-        /// Limpia la lista de destinatarios.
         public void ClearDestinatarios()
         {
             _destinatarios.Clear();
         }
 
-        /// Construye un HTML personalizado para el cuerpo del correo.
         public string BuildHtmlBody(string nombre, string? contenido = null)
         {
             string content = contenido ?? "Este es un correo enviado desde la aplicación HardWorker.";
@@ -79,7 +74,6 @@ namespace HardWorker.Server.Utils
                 </html>";
         }
 
-        /// Envía el correo a los destinatarios configurados, con asunto y cuerpo HTML.
         public async Task<bool> SendEmailAsync(string subject, string htmlBody)
         {
             if (string.IsNullOrEmpty(_fromEmail) || string.IsNullOrEmpty(_password))
@@ -92,10 +86,8 @@ namespace HardWorker.Server.Utils
             {
                 using (var message = new MailMessage())
                 {
-                    // Configurar remitente con nombre de visualización
                     message.From = new MailAddress(_fromEmail, _fromName);
 
-                    // Agregar destinatarios
                     foreach (var dest in _destinatarios)
                         message.To.Add(dest);
 

@@ -38,3 +38,10 @@ export interface UploadImageResponse {
     message: string;
     profileimage: string;
 }
+
+export interface NavigationOption {
+    label: string;
+    route: string;
+    icon: string;
+    description: string;
+}

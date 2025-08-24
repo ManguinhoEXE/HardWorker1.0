@@ -32,7 +32,7 @@
 }
 
 .active-nav-button-board {
-  background-color: gray !important; 
+  background-color: gray !important;
   color: gray !important;
   font-weight: bold;
 }
@@ -47,7 +47,7 @@
   max-height: 290px;
   height: 100vh;
   overflow-y: auto;
-  -ms-overflow-style: none;  /* Oculta scrollbar en IE y Edge */
+  -ms-overflow-style: none;
 }
 
 .info-card h5 {
@@ -59,12 +59,11 @@
 }
 
 /* ==================== 5. PERSONALIZACIÓN DE SCROLLBAR ==================== */
-/* Oculta scrollbar pero mantiene funcionalidad */
 .info-card::-webkit-scrollbar {
   width: 7px;
   padding: 10px;
-  display: none; /* Oculta visualmente */
-} 
+  display: none;
+}
 
 .info-card::-webkit-scrollbar-thumb {
   background-color: #ffffff00;
@@ -72,71 +71,251 @@
 }
 
 /* ==================== 6. ELEMENTOS DE NOTIFICACIÓN ==================== */
-.notifacation-card {
-  position: relative;
-  padding-left: 1.5rem;
-}
-
-.notification-card .status-dot {
-  position: absolute;
-  top: 0.6rem;
-  left: 8rem;
-}
-
 .status-dot {
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    display: inline-block;
+    top: 8px;
+    right: 8px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.status-dot.unread {
   background-color: #28a745;
-  border-radius: 50%;
-  margin-left: 1rem;
-  vertical-align: middle;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+  animation: pulse-green 2s infinite;
+}
+
+.status-dot.read {
+  background-color: #6c757d;
+  box-shadow: none;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+  }
+
+  100% {
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.4);
+  }
+}
+
+.notification-card.disabled {
+  opacity: 0.6;
+  cursor: default !important;
+  background-color: #f1f3f4;
 }
 
 /* ==================== 7. MODAL ==================== */
-.custom-modal-backdrop {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+  backdrop-filter: blur(5px);
+  padding: 20px;
+  box-sizing: border-box;
+  animation: backdropFadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 15px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  position: relative;
+  margin: auto;
+  transform: scale(1);
+  animation: modalSlideIn 0.4s ease-out;
+}
+
+.notification-modal {
+  max-width: 425px;
+}
+
+/* ==================== CABECERA DEL MODAL ==================== */
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 15px 15px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h3 i {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+}
+
+.btn-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
-}
-
-.custom-modal {
-  background-color: #f7f2f2;
-  color: #000000;
-  border-radius: 12px;
-  padding: 2rem 2rem 1.5rem 2rem;
-  min-width: 320px;
-  max-width: 90vw;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-  position: relative;
-}
-
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  color: #000000;
   cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
 }
 
-/* ==================== 8. ESTILOS DE BOTONES ==================== */
-/* Comportamiento de hover común para botones de aceptar y rechazar */
-.accept-btn:hover,
-.reject-btn:hover {
-  color: transparent;
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: rotate(90deg);
 }
 
-.accept-btn:hover::after,
-.reject-btn:hover::after {
-  content: "";
+/* ==================== CONTENIDO DEL MODAL ==================== */
+.modal-body {
+  padding: 30px 25px;
+  background: #f8fafc;
+  color: #2d3748;
+}
+
+.modal-body h5 {
+  color: #2d3748;
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+
+.modal-body h6 {
+  color: #000000;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.modal-body p {
+  color: #2d3748;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.modal-body p strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+/* ==================== FOOTER DEL MODAL ==================== */
+.modal-actions {
+  padding: 20px 25px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  margin-inline: 50px;
+  gap: 12px;
+  background: #f8fafc;
+  border-radius: 0 0 15px 15px;
+  position: sticky;
+  bottom: 0;
+}
+
+.modal-actions .btn {
+  min-width: 120px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  justify-content: center;
+  border: 2px solid transparent;
+}
+
+.modal-actions .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-actions .btn-success {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  color: white;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.modal-actions .btn-success:hover:not(:disabled) {
+  background: linear-gradient(135deg, #38a169, #2f855a);
+  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.modal-actions .btn-danger {
+  background: linear-gradient(135deg, #f56565, #e53e3e);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.modal-actions .btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e53e3e, #c53030);
+  box-shadow: 0 6px 20px rgba(245, 101, 101, 0.4);
+}
+
+.modal-actions .btn-secondary {
+  background: #718096;
+  color: white;
+  border-color: #718096;
+}
+
+.modal-actions .btn-secondary:hover:not(:disabled) {
+  background: #4a5568;
+  border-color: #4a5568;
+}
+
+/* ==================== ANIMACIONES ==================== */
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }

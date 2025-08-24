@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../Services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,159 +11,231 @@ import { RouterModule, Router } from '@angular/router';
   templateUrl: './sign-up.component.html',
   styleUrls: ['./sign-up.component.css']
 })
-export class SignUpComponent {
+export class SignUpComponent implements OnInit {
 
+  /* ==================== PROPIEDADES DEL FORMULARIO ==================== */
   username: string = '';
   password: string = '';
   firstName: string = '';
   lastName: string = '';
 
+  /* ==================== PROPIEDADES DE UI Y ESTADO ==================== */
   errors: string[] = [];
   isSubmitting: boolean = false;
+  isCheckingAccess: boolean = true;
+  accessDeniedMessage: string = '';
+  successMessage: string = '';
 
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
-
-  private validateForm(): boolean {
-    this.errors = [];
-
-    // 1. VALIDACIÓN DE USERNAME
-    if (!this.username.trim()) {
-      this.errors.push('El nombre de usuario es obligatorio.');
-    } else {
-      // Formato: Solo letras, números, '_', '.'
-      const usernameRegex = /^[a-zA-Z0-9_.]+$/;
-      if (!usernameRegex.test(this.username)) {
-        this.errors.push('El nombre de usuario solo puede contener letras, números, "_" y "."');
-      }
-      
-      // Longitud: 4-12 caracteres
-      if (this.username.length < 4 || this.username.length > 12) {
-        this.errors.push('El nombre de usuario debe tener entre 4 y 12 caracteres.');
-      }
-      
-      if (this.username.includes(' ')) {
-        this.errors.push('El nombre de usuario no puede contener espacios.');
-      }
-    }
-
-    // VALIDACIÓN DE PASSWORD
-    if (!this.password.trim()) {
-      this.errors.push('La contraseña es obligatoria.');
-    } else {
-      // Longitud mínima: 8 caracteres
-      if (this.password.length < 8) {
-        this.errors.push('La contraseña debe tener al menos 8 caracteres.');
-      }
-      
-      // mayúscula, minúscula, número, carácter especial
-      const hasUpperCase = /[A-Z]/.test(this.password);
-      const hasLowerCase = /[a-z]/.test(this.password);
-      const hasNumbers = /\d/.test(this.password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(this.password);
-      
-      if (!hasUpperCase) {
-        this.errors.push('La contraseña debe contener al menos una letra mayúscula.');
-      }
-      if (!hasLowerCase) {
-        this.errors.push('La contraseña debe contener al menos una letra minúscula.');
-      }
-      if (!hasNumbers) {
-        this.errors.push('La contraseña debe contener al menos un número.');
-      }
-      if (!hasSpecialChar) {
-        this.errors.push('La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?":{}|<>).');
-      }
-      
-      // No igual al usuario
-      if (this.password.toLowerCase() === this.username.toLowerCase()) {
-        this.errors.push('La contraseña no puede ser igual al nombre de usuario.');
-      }
-      
-      // No contener datos personales
-      if (this.firstName.trim() && this.password.toLowerCase().includes(this.firstName.toLowerCase())) {
-        this.errors.push('La contraseña no puede contener tu nombre.');
-      }
-      if (this.lastName.trim() && this.password.toLowerCase().includes(this.lastName.toLowerCase())) {
-        this.errors.push('La contraseña no puede contener tu apellido.');
-      }
-    }
-
-    // VALIDACIÓN DE PRIMER NOMBRE
-    if (!this.firstName.trim()) {
-      this.errors.push('El primer nombre es obligatorio.');
-    } else {
-      // Solo letras y espacios (para nombres compuestos como "José Ángel")
-      const nameRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
-      if (!nameRegex.test(this.firstName)) {
-        this.errors.push('El primer nombre solo puede contener letras.');
-      }
-      
-      // Longitud: 2-14 caracteres
-      if (this.firstName.trim().length < 2 || this.firstName.trim().length > 14) {
-        this.errors.push('El primer nombre debe tener entre 2 y 14 caracteres.');
-      }
-    }
-
-    // VALIDACIÓN DE PRIMER APELLIDO
-    if (!this.lastName.trim()) {
-      this.errors.push('El primer apellido es obligatorio.');
-    } else {
-      // Solo letras y espacios
-      const lastNameRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
-      if (!lastNameRegex.test(this.lastName)) {
-        this.errors.push('El primer apellido solo puede contener letras.');
-      }
-      
-      // Longitud: 2-14 caracteres
-      if (this.lastName.trim().length < 2 || this.lastName.trim().length > 14) {
-        this.errors.push('El primer apellido debe tener entre 2 y 14 caracteres.');
-      }
-    }
-
-    return this.errors.length === 0;
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.checkUserAuthorization();
+    }, 200);
   }
 
-  onSubmit() {
-    this.errors = [];
-    
-    if (!this.validateForm()) {
-      console.log('Errores de validación:', this.errors);
-      return; 
+  /* ==================== VERIFICACIÓN DE AUTORIZACIÓN SIMPLIFICADA ==================== */
+
+  private checkUserAuthorization(): void {
+    this.isCheckingAccess = true;
+    this.accessDeniedMessage = '';
+
+    console.log('Verificando autorización desde cookies...');
+
+    const currentRole = this.authService.getCurrentUserRole();
+    console.log('Rol del usuario:', currentRole);
+
+    if (!currentRole || currentRole === 'No autenticado') {
+      this.showAccessDenied('Token inválido. Por favor, inicia sesión nuevamente.');
+    } else if (currentRole !== 'Super') {
+      this.showAccessDenied(`Solo usuarios con rol "Super" pueden crear usuarios. Tu rol actual es: "${currentRole}".`);
+    } else {
+      this.clearAccessMessages();
+      console.log('Usuario con rol Super autorizado');
     }
 
+    this.isCheckingAccess = false;
+  }
+
+  /* ==================== REGISTRO DE USUARIO ==================== */
+
+  onSubmit() {
+    console.log('Iniciando proceso de registro...');
+
+    const currentRole = this.authService.getCurrentUserRole();
+    if (currentRole !== 'Super') {
+      this.showAccessDenied('No tienes permisos para crear usuarios.');
+      return;
+    }
+
+    this.errors = [];
+
+    if (!this.validateForm()) {
+      console.log('Errores de validación:', this.errors);
+      return;
+    }
+
+    this.performRegistration();
+  }
+
+  private performRegistration(): void {
     this.isSubmitting = true;
+    console.log('Enviando petición de registro...');
 
     this.authService.register(
-      this.username.trim(), 
-      this.password, 
-      this.firstName.trim(), 
-      this.lastName.trim()
+      this.username.trim(),
+      this.password,
+      this.firstName.trim(),
+      this.lastName.trim(),
+      null
     ).subscribe({
       next: (response) => {
-        console.log('Registro exitoso:', response);
-        this.router.navigate(['/iniciarsesion']);
-        this.clearForm();
-        this.isSubmitting = false;
+        console.log('Usuario creado exitosamente:', response);
+        this.handleRegistrationSuccess(response);
       },
       error: (error) => {
-        console.log('Error de registro:', error);
-        this.isSubmitting = false;
-        
-        if (error.status === 400 && error.error?.message) {
-          this.errors.push(error.error.message);
-        } else if (error.status === 409) {
-          this.errors.push('El nombre de usuario ya existe. Por favor, elige otro.');
-        } else {
-          this.errors.push('Error en el servidor. Por favor, inténtalo de nuevo.');
-        }
+        console.error('Error al crear usuario:', error);
+        this.handleRegistrationError(error);
       }
     });
   }
 
+  private handleRegistrationSuccess(response: any): void {
+    this.clearForm();
+    this.isSubmitting = false;
+
+    this.router.navigate(['/superadmin']);
+  }
+
+  private handleRegistrationError(error: any): void {
+    this.isSubmitting = false;
+
+    if (error.status === 401) {
+      this.showAccessDenied('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      setTimeout(() => this.router.navigate(['/iniciarsesion']), 3000);
+      return;
+    }
+
+    if (error.status === 403) {
+      this.showAccessDenied('No tienes permisos suficientes para crear usuarios.');
+      return;
+    }
+
+    if (error.status === 400 && error.error?.message) {
+      this.errors.push(error.error.message);
+    } else if (error.status === 409) {
+      this.errors.push('El nombre de usuario ya existe. Por favor, elige otro.');
+    } else if (error.status === 500) {
+      this.errors.push('Error interno del servidor. Por favor, inténtalo más tarde.');
+    } else if (error.status === 0) {
+      this.errors.push('No se puede conectar al servidor. Verifica tu conexión.');
+    } else {
+      this.errors.push(`Error inesperado (${error.status}). Por favor, inténtalo de nuevo.`);
+    }
+  }
+
+  /* ==================== MÉTODOS DE MENSAJES SIMPLIFICADOS ==================== */
+
+  private showAccessDenied(message: string): void {
+    this.accessDeniedMessage = message;
+    this.successMessage = '';
+    this.clearErrors();
+
+    setTimeout(() => {
+      this.accessDeniedMessage = '';
+    }, 10000);
+  }
+
+  private showSuccessMessage(message: string): void {
+    this.successMessage = message;
+    this.accessDeniedMessage = '';
+    this.clearErrors();
+
+    setTimeout(() => {
+      this.successMessage = '';
+    }, 5000);
+  }
+
+  private clearAccessMessages(): void {
+    this.accessDeniedMessage = '';
+    this.successMessage = '';
+  }
+
+  /* ==================== MÉTODOS PÚBLICOS USADOS EN HTML ==================== */
+
+  getCurrentUserRole(): string {
+    const role = this.authService.getCurrentUserRole();
+    return role || 'No autenticado';
+  }
+
+  refreshAuthorization(): void {
+    console.log('Forzando re-verificación...');
+    this.clearAccessMessages();
+    this.checkUserAuthorization();
+  }
+
+  goToLogin(): void {
+    this.router.navigate(['/iniciarsesion']);
+  }
+
+  goToSuperAdmin(): void {
+    this.router.navigate(['/superadmin']);
+  }
+
+  /* ==================== VALIDACIONES ==================== */
+
+  private validateForm(): boolean {
+    this.errors = [];
+
+    if (!this.username.trim()) {
+      this.errors.push('El nombre de usuario es obligatorio.');
+    } else {
+      const usernameRegex = /^[a-zA-Z0-9_.]+$/;
+      if (!usernameRegex.test(this.username)) {
+        this.errors.push('El nombre de usuario solo puede contener letras, números, "_" y "."');
+      }
+      if (this.username.length < 4 || this.username.length > 12) {
+        this.errors.push('El nombre de usuario debe tener entre 4 y 12 caracteres.');
+      }
+    }
+
+    if (!this.password.trim()) {
+      this.errors.push('La contraseña es obligatoria.');
+    } else {
+      if (this.password.length < 8) {
+        this.errors.push('La contraseña debe tener al menos 8 caracteres.');
+      }
+      if (!/[A-Z]/.test(this.password)) {
+        this.errors.push('La contraseña debe contener al menos una letra mayúscula.');
+      }
+      if (!/[a-z]/.test(this.password)) {
+        this.errors.push('La contraseña debe contener al menos una letra minúscula.');
+      }
+      if (!/\d/.test(this.password)) {
+        this.errors.push('La contraseña debe contener al menos un número.');
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(this.password)) {
+        this.errors.push('La contraseña debe contener al menos un carácter especial.');
+      }
+    }
+
+    if (!this.firstName.trim()) {
+      this.errors.push('El primer nombre es obligatorio.');
+    } else if (this.firstName.trim().length < 2 || this.firstName.trim().length > 14) {
+      this.errors.push('El primer nombre debe tener entre 2 y 14 caracteres.');
+    }
+
+    if (!this.lastName.trim()) {
+      this.errors.push('El primer apellido es obligatorio.');
+    } else if (this.lastName.trim().length < 2 || this.lastName.trim().length > 14) {
+      this.errors.push('El primer apellido debe tener entre 2 y 14 caracteres.');
+    }
+
+    return this.errors.length === 0;
+  }
 
   private clearForm(): void {
     this.username = '';
@@ -173,30 +245,10 @@ export class SignUpComponent {
     this.errors = [];
   }
 
-  /**
-   * 🔍 MÉTODO PARA VALIDACIÓN EN TIEMPO REAL (OPCIONAL)
-   */
+  private clearErrors(): void {
+    this.errors = [];
+  }
+
   onFieldChange(field: string): void {
-    // Limpiar errores relacionados con el campo específico
-    switch (field) {
-      case 'username':
-        this.errors = this.errors.filter(error => 
-          !error.includes('nombre de usuario') && !error.includes('espacios')
-        );
-        break;
-      case 'password':
-        this.errors = this.errors.filter(error => 
-          !error.includes('contraseña') && !error.includes('mayúscula') && 
-          !error.includes('minúscula') && !error.includes('número') && 
-          !error.includes('especial')
-        );
-        break;
-      case 'firstName':
-        this.errors = this.errors.filter(error => !error.includes('primer nombre'));
-        break;
-      case 'lastName':
-        this.errors = this.errors.filter(error => !error.includes('primer apellido'));
-        break;
-    }
   }
 }

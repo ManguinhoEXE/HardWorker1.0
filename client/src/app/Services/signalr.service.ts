@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import { BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { hourService } from './hour.service';
+import { NotificationStorageService } from './notification-storage.service';
 
 @Injectable({
     providedIn: 'root'
@@ -13,25 +14,26 @@ export class SignalRService {
 
     public connectionState$ = new BehaviorSubject<string>('Disconnected');
     public notifications$ = new BehaviorSubject<any>(null);
-    
+
     public hourStatusUpdated$ = new BehaviorSubject<any>(null);
     private isInitialized = false;
 
     constructor(
         private authService: AuthService,
-        private hourService: hourService
+        private hourService: hourService,
+        private notificationStorage: NotificationStorageService
+
     ) {
         console.log('[SignalRService] Servicio creado, esperando inicialización manual...');
     }
 
-    // Inicializar SignalR después del login exitoso
     public async initializeAfterLogin(user: any): Promise<void> {
         if (this.isInitialized) {
             console.log('[SignalRService] Ya está inicializado, omitiendo...');
             return;
         }
 
-        console.log('[SignalRService] 🚀 Inicializando SignalR para usuario:', user.id);
+        console.log('[SignalRService]  Inicializando SignalR para usuario:', user.id);
 
         try {
             await this.startConnection(user);
@@ -65,26 +67,40 @@ export class SignalRService {
                 console.log('[SignalRService]  Estado de hora actualizado via UpdateHourStatus');
             });
 
+            this.hubConnection.on('UpdateAvailableHours', (newAvailableHours: number) => {
+                console.log('[SignalRService] UpdateAvailableHours recibido:', newAvailableHours);
+                window.dispatchEvent(new CustomEvent('available-hours-updated', {
+                    detail: { availableHours: newAvailableHours }
+                }));
+                console.log('[SignalRService] Evento available-hours-updated emitido');
+            });
+
             this.hubConnection.on('ReceiveNotification', (data: any) => {
                 console.log('[SignalRService]  ReceiveNotification recibida:', data);
                 this.notifications$.next(data);
 
-                // Fallback para horas aceptadas
                 if (data.type === 'hoursAccepted') {
                     console.log('[SignalRService]  Horas aceptadas detectadas, refrescando total...');
-
-                    // Refrescar el total después de un pequeño delay
                     setTimeout(() => {
                         this.hourService.refreshTotal();
                         console.log('[SignalRService] Total de horas refrescado via ReceiveNotification fallback');
                     }, 500);
                 }
 
-                // Emitir evento global para NavComponent
                 window.dispatchEvent(new CustomEvent('signalr-notification', { detail: data }));
             });
 
-            // Eventos de estado de conexión
+            this.hubConnection.on('DistributeNotification', (data: any) => {
+                console.log(' [SignalRService] DistributeNotification recibida:', data);
+                console.log('[SignalRService] Datos completos:', JSON.stringify(data, null, 2));
+
+                this.notificationStorage.distributeNotificationToTargets(data);
+                console.log(' [SignalRService] Notificación distribuida a localStorage');
+
+                window.dispatchEvent(new CustomEvent('signalr-distribute', { detail: data }));
+                console.log(' [SignalRService] Evento signalr-distribute emitido');
+            });
+
             this.hubConnection.onreconnecting(() => {
                 console.log('[SignalRService]  Reconectando...');
                 this.connectionState$.next('Reconnecting');
@@ -103,16 +119,13 @@ export class SignalRService {
                 (window as any).signalRConnection = null;
             });
 
-            // Iniciar conexión
             await this.hubConnection.start();
             console.log('[SignalRService]  SignalR conectado exitosamente para usuario:', user.id);
             this.connectionState$.next('Connected');
 
-            // Hacer disponible globalmente
             (window as any).signalRConnection = this.hubConnection;
             console.log('[SignalRService]  SignalR disponible globalmente');
 
-            // Unirse a grupos
             await this.hubConnection.invoke('AddToGroup', user.id.toString());
             console.log(`[SignalRService] → Agregado al grupo ${user.id}`);
 

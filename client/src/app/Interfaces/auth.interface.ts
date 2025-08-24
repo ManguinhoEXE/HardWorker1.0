@@ -24,3 +24,11 @@ export interface DecodedToken {
     iat?: number;
     [key: string]: any;
 }
+
+export interface EditUserRequest {
+    username: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    password?: string;
+}

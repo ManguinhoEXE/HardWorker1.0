@@ -5,6 +5,7 @@ import { isPlatformBrowser } from "@angular/common";
 import { UserService } from './user.service';
 import { JwtService } from './jwt.Service';
 import { UserLoginResponse, CurrentUserResponse } from "../Interfaces/index";
+import { EditUserRequest } from "../Interfaces/auth.interface";
 
 
 
@@ -17,11 +18,9 @@ export class AuthService {
      * ==================== 2. PROPIEDADES ====================
      */
 
-    // 2.1 Configuración del servicio
     private readonly apiUrl = 'http://localhost:5072/api/auth';
     private readonly isBrowser: boolean;
 
-    // 2.2 Estado de la sesión con BehaviorSubjects
     private currentUserRole = new BehaviorSubject<string | null>(null);
     public currentUserRole$ = this.currentUserRole.asObservable();
     private currentUserId = new BehaviorSubject<number | null>(null);
@@ -39,8 +38,7 @@ export class AuthService {
         private jwtService: JwtService
     ) {
         this.isBrowser = isPlatformBrowser(this.platformId);
-        
-        // Inicializar estado desde token si existe
+
         if (this.isBrowser) {
             this.initializeFromToken();
         }
@@ -50,9 +48,6 @@ export class AuthService {
      * ==================== 4. GESTIÓN DE SESIÓN ====================
      */
 
-    /**
-     * Inicializa el estado del usuario desde el token en las cookies
-     */
     private initializeFromToken(): void {
         const token = this.jwtService.getTokenFromCookies();
         if (token && this.jwtService.isTokenValid(token)) {
@@ -63,9 +58,6 @@ export class AuthService {
         }
     }
 
-    /**
-     * Actualiza el estado del usuario desde el token JWT
-     */
     private updateUserStateFromToken(token: string): void {
         const role = this.jwtService.getRoleFromToken(token);
         const userId = this.jwtService.getUserIdFromToken(token);
@@ -76,18 +68,12 @@ export class AuthService {
         if (username) this.currentUserName.next(username);
     }
 
-    /**
-     * Actualiza el estado del usuario desde la respuesta del backend
-     */
     private updateUserStateFromResponse(response: CurrentUserResponse): void {
         this.currentUserRole.next(response.role);
         this.currentUserId.next(response.id);
         this.currentUserName.next(`${response.firstName} ${response.lastName}`);
     }
 
-    /**
-     * Verifica la sesión actual con el backend
-     */
     private verifyCurrentUserSession(): void {
         if (!this.isBrowser) return;
 
@@ -101,14 +87,10 @@ export class AuthService {
             },
             error: (err) => {
                 console.error('Error verificando sesión:', err);
-                // Mantener sesión basada en token si falla el backend
             }
         });
     }
 
-    /**
-     * Limpia el estado de la sesión
-     */
     private clearUserSession(): void {
         this.currentUserRole.next(null);
         this.currentUserId.next(null);
@@ -119,21 +101,17 @@ export class AuthService {
      * ==================== 5. AUTENTICACIÓN ====================
      */
 
-    /**
-     * Registro de nuevo usuario
-     */
-    register(username: string, password: string, firstName: string, lastName: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/registro`, { 
-            username, 
-            password, 
-            firstName, 
-            lastName 
+    register(username: string, password: string, firstName: string, lastName: string, token: string | null): Observable<any> {
+        return this.http.post(`${this.apiUrl}/registro`, {
+            username,
+            password,
+            firstName,
+            lastName
+        }, {
+            withCredentials: true
         });
     }
 
-    /**
-     * Iniciar sesión
-     */
     login(username: string, password: string): Observable<UserLoginResponse> {
         return this.http.post<UserLoginResponse>(`${this.apiUrl}/iniciarsesion`,
             { username, password },
@@ -161,9 +139,6 @@ export class AuthService {
         );
     }
 
-    /**
-     * Cerrar sesión
-     */
     logout(): Observable<any> {
         return this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
             tap(() => {
@@ -172,43 +147,61 @@ export class AuthService {
         );
     }
 
+    deleteUser(userId: number): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/eliminar/${userId}`, { withCredentials: true });
+    }
+
+    editUser(userId: number, userData: EditUserRequest): Observable<any> {
+        console.log(`PUT Request to: ${this.apiUrl}/editar/${userId}`);
+        console.log('Data being sent:', userData);
+
+        return this.http.put(`${this.apiUrl}/editar/${userId}`, userData, {
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).pipe(
+            tap({
+                next: (response) => {
+                    console.log(' Edit Response:', response);
+                },
+                error: (error) => {
+                    console.error('Edit Error:', error);
+                    console.error('Error details:', {
+                        status: error.status,
+                        statusText: error.statusText,
+                        url: error.url,
+                        message: error.message
+                    });
+                }
+            })
+        );
+    }
+
     /**
      * ==================== 6. VERIFICACIÓN DE ESTADO ====================
      */
 
-    /**
-     * Verifica si el usuario es administrador
-     */
     isAdmin(): boolean {
-        // Verificar estado actual primero
         if (this.currentUserRole.value === 'Admin') {
             return true;
         }
-
-        // Verificar desde token como respaldo
         return this.checkAdminFromToken();
     }
 
-    /**
-     * Verifica si el usuario está autenticado
-     */
     isAuthenticated(): boolean {
         return this.jwtService.isAuthenticated();
     }
 
-    /**
-     * Verifica admin desde token y actualiza estado si es necesario
-     */
     private checkAdminFromToken(): boolean {
         const token = this.jwtService.getTokenFromCookies();
         if (token) {
             const isAdmin = this.jwtService.isAdmin(token);
-            
-            // Actualizar estado si encontramos admin en token
+
             if (isAdmin && !this.currentUserRole.value) {
                 this.currentUserRole.next('Admin');
             }
-            
+
             return isAdmin;
         }
         return false;
@@ -218,36 +211,22 @@ export class AuthService {
      * ==================== 7. GETTERS DE ESTADO ====================
      */
 
-    /**
-     * Obtiene el rol actual del usuario
-     */
     getCurrentUserRole(): string | null {
-        // Verificar estado actual primero
         if (this.currentUserRole.value) {
             return this.currentUserRole.value;
         }
 
-        // Verificar desde token como respaldo
         return this.getRoleFromTokenAndUpdate();
     }
 
-    /**
-     * Obtiene el ID del usuario actual
-     */
     getCurrentUserId(): number | null {
         return this.currentUserId.value;
     }
 
-    /**
-     * Obtiene el nombre del usuario actual
-     */
     getCurrentUserName(): string | null {
         return this.currentUserName.value;
     }
 
-    /**
-     * Obtiene rol desde token y actualiza estado si es necesario
-     */
     private getRoleFromTokenAndUpdate(): string | null {
         const token = this.jwtService.getTokenFromCookies();
         if (token) {
@@ -264,25 +243,16 @@ export class AuthService {
      * ==================== 8. UTILIDADES ====================
      */
 
-    /**
-     * Verifica si el token expirará pronto
-     */
     willTokenExpireSoon(minutesThreshold: number = 5): boolean {
         const token = this.jwtService.getTokenFromCookies();
         return token ? this.jwtService.willExpireSoon(token, minutesThreshold) : false;
     }
 
-    /**
-     * Obtiene información del token para debugging
-     */
     getTokenInfo(): any {
         const token = this.jwtService.getTokenFromCookies();
         return token ? this.jwtService.getTokenInfo(token) : { message: 'No token found' };
     }
 
-    /**
-     * Método público para verificar sesión desde backend (usado en componentes)
-     */
     verifySession(): Observable<CurrentUserResponse> {
         return this.userService.getUser().pipe(
             tap((response: CurrentUserResponse) => {

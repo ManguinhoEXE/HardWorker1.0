@@ -10,7 +10,7 @@ import { Notification } from '../Interfaces/index';
 import { SignalRService } from '../Services/signalr.service';
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-
+import { NotificationStorageService } from '../Services/notification-storage.service';
 
 
 @Component({
@@ -20,13 +20,9 @@ import { isPlatformBrowser } from '@angular/common';
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.css'
 })
-export class NavComponent implements OnInit {
+export class NavComponent implements OnInit, OnDestroy {
 
-  /**
-   * ==================== 2. PROPIEDADES ====================
-   */
-
-  // 2.1 Información del usuario
+  /* ==================== 3. PROPIEDADES DE USUARIO ==================== */
   firstName: string = '';
   lastName: string = '';
   profileImage: string | null = null;
@@ -34,74 +30,72 @@ export class NavComponent implements OnInit {
   userRole: string = '';
   currentUserId: string = '';
 
+  // Cache para imágenes de perfil
   private static profileImageCache: { [userId: string]: string } = {};
   private static imageValidationCache: { [url: string]: boolean } = {};
 
-
-
-  // 2.2 Sistema de notificaciones
+  /* ==================== 4. PROPIEDADES DE NOTIFICACIONES ==================== */
   notifications: Notification[] = [];
   selectedNotification: Notification | null = null;
   private NOTIFICATIONS_STORAGE_KEY: string = '';
   private readonly MAX_NOTIFICATIONS = 50;
 
-
-  // 2.3 Mensajes de estado
+  /* ==================== 5. PROPIEDADES DE UI Y ESTADO ==================== */
   successMessage: string = '';
   errorMessage: string = '';
 
-  // 2.4 Variables adicionales
-  hours = 0;
-  description = '';
-
-  /**
-   * ==================== 3. CICLO DE VIDA ====================
-   */
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
-
     private UserService: UserService,
     private cdr: ChangeDetectorRef,
     private router: Router,
     private AuthService: AuthService,
     private hourService: hourService,
     private compensatoryService: CompensatoryService,
-    private signalRService: SignalRService
+    private signalRService: SignalRService,
+    private notificationStorage: NotificationStorageService
 
   ) { }
 
+  /* ==================== 6. LIFECYCLE HOOKS ==================== */
   ngOnInit(): void {
-
     this.userRole = this.AuthService.getCurrentUserRole() || 'User';
     this.loadUserData();
   }
 
-  /**
-   * ==================== 4. CARGA DE DATOS DEL USUARIO ====================
-   */
+  ngOnDestroy(): void {
+    if (this.currentUserId) {
+      const userId = parseInt(this.currentUserId);
+      this.notificationStorage.cleanReadNotifications(userId);
+      console.log(` [NavComponent] Notificaciones leídas eliminadas al destruir componente para usuario ${userId}`);
+    }
 
-  /**
-   * Carga los datos del usuario y configura SignalR
-   */
+    this.saveNotificationsToStorage();
 
+    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+      window.removeEventListener('signalr-notification', this.handleNotification);
+      console.log('[NavComponent]  Event listener removido correctamente');
+    }
+
+    this.signalRService.disconnect();
+  }
+
+  /* ==================== 7. CARGA DE DATOS DEL USUARIO ==================== */
   private loadUserData(): void {
     this.UserService.getUser().subscribe({
       next: (user) => {
-        console.log('=== USUARIO CARGADO ===');
-        console.log('Usuario completo:', JSON.stringify(user, null, 2));
+        console.log('=== USUARIO CARGADO ===', user);
 
         this.firstName = user.firstName;
         this.lastName = user.lastName;
-
         this.currentUserId = user.id.toString();
-
+        this.userRole = user.role || this.AuthService.getCurrentUserRole() || 'User';
         this.NOTIFICATIONS_STORAGE_KEY = `hardworker_notifications_user_${this.currentUserId}`;
 
         this.loadNotificationsFromStorage();
-
-        const imageUrl = user.profileimage;
-        this.setProfileImage(imageUrl);
+        this.setProfileImage(user.profileimage);
         this.initializeSignalR(user);
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error loading user:', err);
@@ -110,122 +104,18 @@ export class NavComponent implements OnInit {
     });
   }
 
-  /**
-  *  CARGAR notificaciones desde localStorage
-  */
-  private loadNotificationsFromStorage(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      console.log('[NavComponent] ⚠️ No estamos en navegador - saltando carga de localStorage');
-      this.notifications = [];
-      return;
-    }
-
-    try {
-      if (!this.NOTIFICATIONS_STORAGE_KEY) {
-        console.warn('[NavComponent] ⚠️ No se puede cargar notificaciones: usuario no identificado');
-        return;
-      }
-
-      const storedNotifications = localStorage.getItem(this.NOTIFICATIONS_STORAGE_KEY);
-
-      if (storedNotifications) {
-        this.notifications = JSON.parse(storedNotifications);
-        console.log(`[NavComponent] ✅ ${this.notifications.length} notificaciones cargadas para usuario ${this.currentUserId}`);
-        this.cdr.detectChanges();
-      } else {
-        console.log(`[NavComponent] ℹ️ No hay notificaciones guardadas para usuario ${this.currentUserId}`);
-        this.notifications = [];
-      }
-    } catch (error) {
-      console.error('[NavComponent] ❌ Error cargando notificaciones desde localStorage:', error);
-      this.notifications = [];
+  public refreshUserRole(): void {
+    const currentRole = this.AuthService.getCurrentUserRole();
+    if (currentRole && currentRole !== this.userRole) {
+      console.log(`[NavComponent] Rol actualizado: ${this.userRole} → ${currentRole}`);
+      this.userRole = currentRole;
+      this.cdr.detectChanges();
     }
   }
 
-  /**
-  *  GUARDAR notificaciones en localStorage
-  */
-  private saveNotificationsToStorage(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      console.log('[NavComponent] ⚠️ No estamos en navegador - saltando guardado en localStorage');
-      return;
-    }
-
-    try {
-      if (!this.NOTIFICATIONS_STORAGE_KEY) {
-        console.warn('[NavComponent] ⚠️ No se puede guardar notificaciones: usuario no identificado');
-        return;
-      }
-
-      const notificationsToSave = this.notifications.slice(0, this.MAX_NOTIFICATIONS);
-      localStorage.setItem(this.NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notificationsToSave));
-      console.log(`[NavComponent] ✅ ${notificationsToSave.length} notificaciones guardadas para usuario ${this.currentUserId}`);
-    } catch (error) {
-      console.error('[NavComponent] ❌ Error guardando notificaciones en localStorage:', error);
-    }
-  }
-
-  /**
-   *  LIMPIAR notificaciones del storage
-   */
-  public clearAllNotifications(): void {
-    this.notifications = [];
-    this.saveNotificationsToStorage();
-    this.cdr.detectChanges();
-    console.log(`[NavComponent] Todas las notificaciones eliminadas para usuario ${this.currentUserId}`);
-  }
-
-  /**
-   *  ELIMINAR notificación específica
-   */
-  private removeNotificationById(id: number): void {
-    this.notifications = this.notifications.filter(n => n.id !== id);
-    this.saveNotificationsToStorage();
-  }
-  private async initializeSignalR(user: any): Promise<void> {
-    try {
-      console.log('[NavComponent] Iniciando SignalR para usuario:', user.id);
-      await this.signalRService.initializeAfterLogin(user);
-      console.log('[NavComponent]  SignalR inicializado exitosamente');
-
-      // Configurar listener para notificaciones después de la inicialización
-      this.listenToGlobalNotifications();
-    } catch (error) {
-      console.error('[NavComponent]  Error inicializando SignalR:', error);
-    }
-  }
-
-  private listenToGlobalNotifications(): void {
-    const checkForGlobalSignalR = () => {
-      if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined' && (window as any).signalRConnection) {
-        console.log('[NavComponent] ✅ SignalR global encontrado, configurando listener de eventos');
-
-        window.addEventListener('signalr-notification', (event: any) => {
-          const data = event.detail;
-          console.log('[NavComponent] 📧 Evento signalr-notification recibido:', data);
-          this.handleNotification(data);
-        });
-
-        console.log('[NavComponent] ✅ Event listener configurado para signalr-notification');
-
-      } else {
-        console.log('[NavComponent] ⏳ Esperando SignalR global...');
-        setTimeout(checkForGlobalSignalR, 1000);
-      }
-    };
-
-    setTimeout(checkForGlobalSignalR, 500);
-  }
-
-  /**
-  * Configura y asigna la imagen de perfil del usuario
-  */
+  /* ==================== 8. GESTIÓN DE IMAGEN DE PERFIL ==================== */
   private setProfileImage(imageUrl: string | null | undefined): void {
-    console.log('=== CONFIGURACIÓN DE IMAGEN DE PERFIL ===');
-    console.log('URL recibida:', imageUrl);
-
-    if (!imageUrl || imageUrl.trim() === '') {
-      console.warn('No se proporcionó URL de imagen. Usando imagen por defecto.');
+    if (!imageUrl?.trim()) {
       this.profileImage = this.defaultProfileImage;
       this.cdr.detectChanges();
       return;
@@ -233,34 +123,21 @@ export class NavComponent implements OnInit {
 
     const cacheKey = `${this.currentUserId}_${imageUrl}`;
     if (NavComponent.profileImageCache[cacheKey]) {
-      console.log('✅ Imagen encontrada en caché:', NavComponent.profileImageCache[cacheKey]);
       this.profileImage = NavComponent.profileImageCache[cacheKey];
       this.cdr.detectChanges();
       return;
     }
 
-    let finalImageUrl = imageUrl;
-
-    if (!finalImageUrl.includes('?')) {
-      const timestamp = new Date().getTime();
-      finalImageUrl = `${imageUrl}?t=${timestamp}`;
-    }
-
-    console.log('URL final con timestamp:', finalImageUrl);
+    const finalImageUrl = !imageUrl.includes('?')
+      ? `${imageUrl}?t=${new Date().getTime()}`
+      : imageUrl;
 
     this.profileImage = finalImageUrl;
     this.cdr.detectChanges();
-
     this.validateImageUrlInBackground(finalImageUrl, cacheKey);
-
   }
 
-  /**
-   * Valida si una URL de imagen es accesible
-   */
-
   private validateImageUrlInBackground(url: string, cacheKey: string): void {
-    // Si ya validamos esta URL antes, no hacerlo de nuevo
     if (NavComponent.imageValidationCache[url] !== undefined) {
       if (NavComponent.imageValidationCache[url]) {
         NavComponent.profileImageCache[cacheKey] = url;
@@ -271,18 +148,14 @@ export class NavComponent implements OnInit {
     this.validateImageUrl(url)
       .then((isValid) => {
         NavComponent.imageValidationCache[url] = isValid;
-
         if (isValid) {
-          console.log('✅ Imagen validada exitosamente:', url);
           NavComponent.profileImageCache[cacheKey] = url;
         } else {
-          console.warn('❌ Imagen no válida, fallback a imagen por defecto');
           this.profileImage = this.defaultProfileImage;
           this.cdr.detectChanges();
         }
       })
-      .catch((error) => {
-        console.error('Error validando imagen:', error);
+      .catch(() => {
         NavComponent.imageValidationCache[url] = false;
         this.profileImage = this.defaultProfileImage;
         this.cdr.detectChanges();
@@ -291,68 +164,230 @@ export class NavComponent implements OnInit {
 
   private validateImageUrl(url: string): Promise<boolean> {
     return new Promise((resolve) => {
-      console.log('Iniciando validación de:', url);
-
       const img = new Image();
-      img.onload = () => {
-        console.log('Imagen cargada exitosamente:', url);
-        resolve(true);
-      };
-      img.onerror = (error) => {
-        console.log(' Error cargando imagen:', url, error);
-        resolve(false);
-      };
-
-      // Timeout para evitar esperas indefinidas
-      setTimeout(() => {
-        console.log(' Timeout validando imagen:', url);
-        resolve(false);
-      }, 5000);
-
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      setTimeout(() => resolve(false), 5000);
       img.src = url;
     });
   }
 
-  /**
-   * Procesa las notificaciones recibidas via SignalR
-   */
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Por favor seleccione un archivo de imagen válido.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.showError('La imagen debe ser menor a 5MB.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.UserService.uploadProfileImage(formData).subscribe({
+      next: (response) => {
+        let newImageUrl = response.profileimage;
+        if (!newImageUrl.startsWith('http')) {
+          newImageUrl = `http://localhost:5072/${newImageUrl}`;
+        }
+
+        this.profileImage = `${newImageUrl}?v=${new Date().getTime()}`;
+        this.cdr.detectChanges();
+        this.showSuccess('Imagen de perfil actualizada con éxito.');
+      },
+      error: (error) => {
+        console.error('Error al subir la imagen:', error);
+        this.showError('Error al subir la imagen. Inténtalo de nuevo.');
+      }
+    });
+  }
+
+  onImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    if (imgElement.src !== this.defaultProfileImage) {
+      imgElement.src = this.defaultProfileImage;
+      this.profileImage = this.defaultProfileImage;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /* ==================== 9. GESTIÓN DE SIGNALR ==================== */
+  private async initializeSignalR(user: any): Promise<void> {
+    try {
+      await this.signalRService.initializeAfterLogin(user);
+      this.listenToGlobalNotifications();
+    } catch (error) {
+      console.error('[NavComponent] Error inicializando SignalR:', error);
+    }
+  }
+
+  private listenToGlobalNotifications(): void {
+    const checkForGlobalSignalR = () => {
+      if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+        window.addEventListener('signalr-notification', (event: any) => {
+          this.handleNotification(event.detail);
+        });
+
+        window.addEventListener('signalr-distribute', (event: any) => {
+          this.handleDistributedNotification(event.detail);
+        });
+
+      } else {
+        setTimeout(checkForGlobalSignalR, 1000);
+      }
+    };
+    setTimeout(checkForGlobalSignalR, 500);
+  }
+
+  private handleDistributedNotification(data: any): void {
+    console.log(' [NavComponent] Notificación distribuida recibida:', data);
+    console.log(' [NavComponent] Usuario actual:', this.currentUserId, 'Rol:', this.userRole);
+
+    const currentUserId = parseInt(this.currentUserId);
+    let shouldReload = false;
+
+    if (data.targetUserIds && Array.isArray(data.targetUserIds)) {
+      if (data.targetUserIds.includes(currentUserId)) {
+        console.log(' [NavComponent] Usuario actual está en targetUserIds');
+        shouldReload = true;
+      }
+    }
+    else if (data.targetRole === 'Admin' && this.userRole === 'Admin') {
+      console.log(' [NavComponent] Usuario actual es Admin y notificación es para Admins');
+      shouldReload = true;
+    }
+    else if (data.targetRole === 'User' && (this.userRole === 'User' || this.userRole === 'Admin')) {
+      if (data.userId === currentUserId) {
+        console.log(' [NavComponent] Usuario actual coincide con el destinatario');
+        shouldReload = true;
+      }
+    }
+    else {
+      switch (data.type) {
+        case 'compRequest':
+        case 'hoursRequest':
+          if (this.userRole === 'Admin') {
+            console.log(' [NavComponent] Solicitud para admin (fallback)');
+            shouldReload = true;
+          }
+          break;
+        case 'compAccepted':
+        case 'compRejected':
+        case 'hoursAccepted':
+        case 'hoursRejected':
+          if (data.userId === currentUserId) {
+            console.log(' [NavComponent] Respuesta para usuario actual (fallback)');
+            shouldReload = true;
+          }
+          break;
+      }
+    }
+
+    if (shouldReload) {
+      console.log(' [NavComponent] Recargando notificaciones...');
+      setTimeout(() => {
+        this.loadNotificationsFromStorage();
+      }, 500);
+    } else {
+      console.log(' [NavComponent] Notificación no es para este usuario, ignorando');
+    }
+  }
+
+
+  /* ==================== 10. GESTIÓN DE NOTIFICACIONES ==================== */
+  private loadNotificationsFromStorage(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.currentUserId) {
+      this.notifications = [];
+      return;
+    }
+
+    try {
+      const userId = parseInt(this.currentUserId);
+
+      this.notificationStorage.cleanReadNotifications(userId);
+
+      const storedNotifications = this.notificationStorage.getUnreadNotificationsForUser(userId);
+
+      this.notifications = storedNotifications.map((sn: any) => ({
+        id: sn.id || sn.data?.id,
+        firstName: sn.firstName || sn.data?.firstName || '',
+        lastName: sn.lastName || sn.data?.lastName || '',
+        type: sn.type,
+        hours: sn.hours || sn.data?.hours || 0,
+        description: sn.description || sn.data?.description || '',
+        from: sn.from || sn.data?.from,
+        to: sn.to || sn.data?.to,
+        reason: sn.reason || sn.data?.reason || '',
+        acceptedDate: sn.acceptedDate || sn.data?.acceptedDate,
+        rejectedDate: sn.rejectedDate || sn.data?.rejectedDate,
+        isRead: sn.isRead || false,
+        timestamp: sn.timestamp || new Date()
+      }));
+
+      console.log(` Cargadas ${this.notifications.length} notificaciones NO LEÍDAS para usuario ${userId}`);
+
+      this.notificationStorage.cleanOldNotifications(userId, 30);
+
+      this.cdr.detectChanges();
+
+    } catch (error) {
+      console.error('[NavComponent] Error cargando notificaciones:', error);
+      this.notifications = [];
+    }
+  }
+
+  private saveNotificationsToStorage(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.currentUserId) return;
+
+    try {
+      const userId = parseInt(this.currentUserId);
+
+      this.notificationStorage.cleanReadNotifications(userId);
+
+      this.notificationStorage.cleanOldNotifications(userId, 30);
+
+      console.log(` [NavComponent] Notificaciones guardadas y limpiadas para usuario ${userId}`);
+
+    } catch (error) {
+      console.error('[NavComponent] Error guardando notificaciones:', error);
+    }
+  }
+
   private handleNotification(data: any): void {
-    console.log('Received RAW notification:', data);
-
-    if (data.type === 'hoursRequest' && this.userRole !== 'Admin') {
-      console.warn(' Notificación hoursRequest ignorada - Usuario no es Admin');
+    if (this.userRole === 'Super') {
+      console.log(' Super no recibe notificaciones administrativas:', data.type);
       return;
     }
 
-    if (data.type === 'hoursAccepted' && this.userRole === 'Admin') {
-      console.warn(' Notificación hoursAccepted ignorada - Admin no debe verlas');
+    if ((data.type === 'hoursRequest' || data.type === 'compRequest') && this.userRole !== 'Admin') {
       return;
     }
 
-    if (data.type === 'hoursRejected' && this.userRole === 'Admin') {
-      console.warn(' Notificación hoursRejected ignorada - Admin no debe verlas');
+    if ((data.type === 'hoursAccepted' || data.type === 'hoursRejected' ||
+      data.type === 'compAccepted' || data.type === 'compRejected') &&
+      (this.userRole === 'Admin' || this.userRole === 'Super')) {
       return;
     }
 
-    const validTypes = [
-      'hoursRequest', 'hoursAccepted', 'hoursRejected',
-      'compRequest', 'compAccepted', 'compRejected'
-    ];
-
+    const validTypes = ['hoursRequest', 'hoursAccepted', 'hoursRejected', 'compRequest', 'compAccepted', 'compRejected'];
     if (!validTypes.includes(data.type)) {
-      console.warn('Notification ignored, type:', data.type);
+      console.warn(' Tipo de notificación no válido:', data.type);
       return;
     }
 
-    //VERIFICAR SI YA EXISTE LA NOTIFICACIÓN
-    const existingNotification = this.notifications.find(n =>
-      n.id === data.id && n.type === data.type
-    );
-
-    if (existingNotification) {
-      console.log(`[NavComponent] Notificación duplicada ignorada - ID: ${data.id}, Tipo: ${data.type}`);
+    if (this.notifications.find(n => n.id === data.id && n.type === data.type)) {
+      console.log(' Notificación duplicada ignorada:', data.type, data.id);
       return;
     }
+
+    console.log(` ${this.userRole} recibe notificación:`, data.type);
 
     const notification: Notification = {
       id: data.id,
@@ -368,47 +403,289 @@ export class NavComponent implements OnInit {
       rejectedDate: data.rejectedDate
     };
 
-    console.log(`[${data.type}] Agregando nueva notificación:`, notification);
     this.notifications.unshift(notification);
+
     this.saveNotificationsToStorage();
     this.cdr.detectChanges();
   }
 
-  /**
-   * ==================== 6. GESTIÓN DE SESIÓN ====================
-   */
+  /* ==================== 11. MÉTODOS DINÁMICOS PARA NOTIFICACIONES ==================== */
+  isActionableNotification(type: string): boolean {
+    return type === 'hoursRequest' || type === 'compRequest';
+  }
 
-  /**
-   * Cierra la sesión del usuario
-   */
+  getNotificationContent(notification: any): string {
+    switch (notification.type) {
+      case 'hoursRequest':
+        return `Ha solicitado <strong>${notification.hours} horas</strong><br>"${notification.description}"`;
+
+      case 'hoursAccepted':
+        return `Sus <strong>${notification.hours} horas</strong> han sido aceptadas.<br><strong>${notification.acceptedDate}</strong>`;
+
+      case 'hoursRejected':
+        return `Sus <strong>${notification.hours} horas</strong> han sido rechazadas.<br><strong>${notification.rejectedDate}</strong>`;
+
+      case 'compRequest':
+        return `De <strong>${this.formatDate(notification.from)}</strong> a <strong>${this.formatDate(notification.to)}</strong><br>Razón: "${notification.reason}"`;
+
+      case 'compAccepted':
+        return `Su compensatorio de <strong>${this.formatDate(notification.from)}</strong> a <strong>${this.formatDate(notification.to)}</strong> ha sido aceptado.<br>Razón: "${notification.reason}"`;
+
+      case 'compRejected':
+        return `Su compensatorio de <strong>${this.formatDate(notification.from)}</strong> a <strong>${this.formatDate(notification.to)}</strong> ha sido rechazado.<br>Razón: "${notification.reason}"`;
+
+      default:
+        return 'Notificación';
+    }
+  }
+
+  getModalIcon(): string {
+    if (!this.selectedNotification) return '';
+    return this.selectedNotification.type === 'hoursRequest' ? 'fas fa-bell' : 'fas fa-calendar-alt';
+  }
+
+  getModalTitle(): string {
+    if (!this.selectedNotification) return '';
+    return this.selectedNotification.type === 'hoursRequest' ? 'Solicitud de Horas' : 'Solicitud de Compensatorio';
+  }
+
+  getModalContent(): string {
+    if (!this.selectedNotification) return '';
+
+    if (this.selectedNotification.type === 'hoursRequest') {
+      return `Ha solicitado <strong>${this.selectedNotification.hours}</strong> horas<br>"${this.selectedNotification.description}"`;
+    } else {
+      return `Ha solicitado un compensatorio:<br>De <strong>${this.formatDate(this.selectedNotification.from)}</strong><br>Hasta <strong>${this.formatDate(this.selectedNotification.to)}</strong><br>Razón: "${this.selectedNotification.reason}"`;
+    }
+  }
+
+  getNotificationCursor(notification: Notification): string {
+    if (this.userRole === 'User') {
+      return 'pointer';
+    }
+
+    if (this.userRole === 'Admin') {
+      return this.isActionableNotification(notification.type) ? 'pointer' : 'default';
+    }
+
+    return 'default';
+  }
+
+  private formatDate(date: any): string {
+    if (!date) return '';
+
+    return new Date(date).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  /* ==================== 12. GESTIÓN DE MODALES ==================== */
+  openModal(notification: Notification): void {
+    console.log(' [NavComponent] openModal llamado:', {
+      userRole: this.userRole,
+      notificationType: notification.type,
+      notificationId: notification.id
+    });
+
+    if (this.userRole === 'User') {
+      console.log('[NavComponent] Usuario normal - marcando como leída');
+      this.markNotificationAsRead(notification.id);
+      return;
+    }
+
+    if (this.userRole === 'Admin' && this.isActionableNotification(notification.type)) {
+      console.log('[NavComponent] Admin - abriendo modal para acción');
+      this.selectedNotification = notification;
+      return;
+    }
+
+    if (this.userRole === 'Admin' && !this.isActionableNotification(notification.type)) {
+      console.log('[NavComponent] Admin - notificación no accionable, marcando como leída');
+      this.markNotificationAsRead(notification.id);
+      return;
+    }
+
+    console.log('[NavComponent] Caso no manejado');
+  }
+
+  closeModal(): void {
+    this.selectedNotification = null;
+  }
+
+
+  private markNotificationAsRead(notificationId: number): void {
+    try {
+      const notification = this.notifications.find(n => n.id === notificationId);
+      if (notification) {
+        notification.isRead = true;
+        console.log(` [NavComponent] Notificación ${notificationId} marcada como leída en memoria`);
+      }
+
+      if (this.currentUserId) {
+        const userId = parseInt(this.currentUserId);
+        this.notificationStorage.markAsRead(userId, notificationId.toString());
+        console.log(` [NavComponent] Notificación ${notificationId} marcada como leída en storage`);
+
+        setTimeout(() => {
+          this.notifications = this.notifications.filter(n => n.id !== notificationId);
+          this.cdr.detectChanges();
+          console.log(` [NavComponent] Notificación leída ${notificationId} eliminada de la vista`);
+        }, 1000);
+      }
+
+      this.cdr.detectChanges();
+
+    } catch (error) {
+      console.error('[NavComponent] Error marcando notificación como leída:', error);
+    }
+  }
+
+  /* ==================== 13. GESTIÓN UNIFICADA DE SOLICITUDES ==================== */
+  acceptRequest(): void {
+    if (!this.selectedNotification) return;
+
+    if (this.selectedNotification.type === 'hoursRequest') {
+      this.acceptHourRequest(this.selectedNotification.id);
+    } else {
+      this.acceptCompRequest(this.selectedNotification.id);
+    }
+  }
+
+  rejectRequest(): void {
+    if (!this.selectedNotification) return;
+
+    if (this.selectedNotification.type === 'hoursRequest') {
+      this.rejectHourRequest(this.selectedNotification.id);
+    } else {
+      this.rejectCompRequest(this.selectedNotification.id);
+    }
+  }
+
+  private acceptHourRequest(id: number): void {
+    this.hourService.acceptRequest(id).subscribe({
+      next: () => this.handleRequestSuccess('Solicitud de Horas aceptada.', id),
+      error: (err) => this.handleRequestError(err)
+    });
+  }
+
+  private rejectHourRequest(id: number): void {
+    this.hourService.rejectRequest(id).subscribe({
+      next: () => this.handleRequestSuccess('Solicitud de Horas rechazada.', id),
+      error: (err) => this.handleRequestError(err)
+    });
+  }
+
+  private acceptCompRequest(id: number): void {
+    this.compensatoryService.acceptRequestComp(id).subscribe({
+      next: () => this.handleRequestSuccess('Compensatorio Aceptado.', id),
+      error: (err) => this.handleRequestError(err)
+    });
+  }
+
+  private rejectCompRequest(id: number): void {
+    this.compensatoryService.rejectRequestComp(id).subscribe({
+      next: () => this.handleRequestSuccess('Compensatorio Rechazado.', id),
+      error: (err) => this.handleRequestError(err)
+    });
+  }
+
+  /* ==================== 14. UTILIDADES ==================== */
+  private handleRequestSuccess(message: string, id: number): void {
+    this.showSuccess(message);
+
+    this.removeNotificationById(id);
+
+    this.removeNotificationFromStorage(id);
+
+    this.closeModal();
+    this.cdr.detectChanges();
+  }
+
+  private removeNotificationFromStorage(notificationId: number): void {
+    if (!isPlatformBrowser(this.platformId) || !this.currentUserId) return;
+
+    try {
+      const userId = parseInt(this.currentUserId);
+
+      const currentNotifications = this.notificationStorage.getNotificationsForUser(userId);
+
+      const filteredNotifications = currentNotifications.filter((n: any) =>
+        !(n.id === notificationId || n.data?.id === notificationId)
+      );
+
+      const storageKey = `hardworker_notifications_user_${userId}`;
+      localStorage.setItem(storageKey, JSON.stringify(filteredNotifications));
+
+      console.log(` [NavComponent] Notificación ${notificationId} eliminada del localStorage del admin ${userId}`);
+
+    } catch (error) {
+      console.error('[NavComponent] Error eliminando notificación del storage:', error);
+    }
+  }
+
+  private handleRequestError(error: any): void {
+    this.showError(`Error ${error.status}: ${error.error?.message || error.message}`);
+  }
+
+  private removeNotificationById(id: number): void {
+    const beforeCount = this.notifications.length;
+    this.notifications = this.notifications.filter(n => n.id !== id);
+    const afterCount = this.notifications.length;
+
+    console.log(`[NavComponent] Notificaciones en memoria: ${beforeCount} → ${afterCount}`);
+
+    this.saveNotificationsToStorage();
+  }
+
+  private showSuccess(message: string): void {
+    this.successMessage = message;
+    setTimeout(() => this.successMessage = '', 5000);
+  }
+
+  private showError(message: string): void {
+    this.errorMessage = message;
+    setTimeout(() => this.errorMessage = '', 5000);
+  }
+
+  public clearAllNotifications(): void {
+    this.notifications = [];
+    this.saveNotificationsToStorage();
+    this.cdr.detectChanges();
+  }
+
+  trackByNotification(index: number, notification: Notification): number {
+    return notification.id;
+  }
+
+  /* ==================== 15. GESTIÓN DE SESIÓN ==================== */
+
   logout(): void {
+    if (this.currentUserId) {
+      const userId = parseInt(this.currentUserId);
+      this.notificationStorage.cleanReadNotifications(userId);
+      console.log(` [NavComponent] Notificaciones leídas eliminadas al cerrar sesión para usuario ${userId}`);
+    }
+
     this.saveNotificationsToStorage();
 
     this.signalRService.disconnect().then(() => {
-      console.log('[NavComponent] SignalR desconectado antes del logout');
-
       this.AuthService.logout().subscribe({
-        next: () => {
-          console.log('Sesión cerrada');
-          this.clearSessionAndRedirect();
-        },
-        error: (error) => {
-          console.error('Error al cerrar sesión:', error);
-          this.clearSessionAndRedirect();
-        }
+        next: () => this.clearSessionAndRedirect(),
+        error: () => this.clearSessionAndRedirect()
       });
     });
   }
 
-  /**
-   * Limpia la sesión y redirige al login
-   */
   private clearSessionAndRedirect(): void {
     this.notifications = [];
     this.currentUserId = '';
     this.NOTIFICATIONS_STORAGE_KEY = '';
 
-    // 🚀 PROTEGER EL USO DE DOCUMENT
     if (isPlatformBrowser(this.platformId)) {
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC';
     }
@@ -416,211 +693,16 @@ export class NavComponent implements OnInit {
     this.router.navigate(['/iniciarsesion']);
   }
 
-  /**
-   * ==================== 7. GESTIÓN DE MODALES ====================
-   */
-
-  /**
-   * Abre el modal de notificación si es interactiva
-   */
-  openModal(notification: Notification): void {
-    if (notification.type !== 'hoursRequest' && notification.type !== 'compRequest') {
-      return;
-    }
-    this.selectedNotification = notification;
+  /* ==================== 16. GESTIÓN DE ROLES ==================== */
+  isUser(): boolean {
+    return this.AuthService.getCurrentUserRole() === 'User';
   }
 
-  /**
-   * Cierra el modal de notificación
-   */
-  closeModal(): void {
-    this.selectedNotification = null;
+  isAdmin(): boolean {
+    return this.AuthService.getCurrentUserRole() === 'Admin';
   }
 
-  /**
-   * ==================== 8. GESTIÓN DE SOLICITUDES ====================
-   */
-
-  /**
-   * Acepta una solicitud de horas
-   */
-  acceptHourRequest(id: number): void {
-    this.hourService.acceptRequest(id).subscribe({
-      next: () => {
-        this.handleRequestSuccess('Solicitud de Horas aceptada.', id);
-      },
-      error: (err) => {
-        this.handleRequestError(err);
-      }
-    });
+  isSuper(): boolean {
+    return this.AuthService.getCurrentUserRole() === 'Super';
   }
-
-  /**
-   * Rechaza una solicitud de horas
-   */
-  rejectHourRequest(id: number): void {
-    this.hourService.rejectRequest(id).subscribe({
-      next: () => {
-        this.handleRequestSuccess('Solicitud de Horas rechazada.', id);
-      },
-      error: (err) => {
-        this.handleRequestError(err);
-      }
-    });
-  }
-
-  /**
-   * Acepta una solicitud de compensatorio
-   */
-  acceptCompRequest(id: number): void {
-    this.compensatoryService.acceptRequestComp(id).subscribe({
-      next: () => {
-        this.handleRequestSuccess('Compensatorio Aceptado.', id);
-      },
-      error: (err) => {
-        this.handleRequestError(err);
-      }
-    });
-  }
-
-  /**
-   * Rechaza una solicitud de compensatorio
-   */
-  rejectCompRequest(id: number): void {
-    this.compensatoryService.rejectRequestComp(id).subscribe({
-      next: () => {
-        this.handleRequestSuccess('Compensatorio Rechazado.', id);
-      },
-      error: (err) => {
-        this.handleRequestError(err);
-      }
-    });
-  }
-
-  /**
-   * ==================== 9. UTILIDADES DE SOLICITUDES ====================
-   */
-
-  private handleRequestSuccess(message: string, id: number): void {
-    this.successMessage = message;
-
-    this.removeNotificationById(id);
-    this.closeModal();
-    this.cdr.detectChanges();
-
-    setTimeout(() => this.successMessage = '', 5000);
-  }
-
-  /**
-   * Maneja errores de solicitudes
-   */
-  private handleRequestError(error: any): void {
-    this.errorMessage = `Error ${error.status}: ${error.error?.message || error.message}`;
-    setTimeout(() => this.errorMessage = '', 5000);
-  }
-
-  /**
-   * ==================== 10. GESTIÓN DE IMAGEN DE PERFIL ====================
-   */
-
-  /**
-   * Maneja la selección de archivo para imagen de perfil
-   */
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || !input.files[0]) {
-      console.error('No se seleccionó ningún archivo.');
-      return;
-    }
-
-    const file = input.files[0];
-
-    // Validaciones existentes...
-    if (!file.type.startsWith('image/')) {
-      this.errorMessage = 'Por favor seleccione un archivo de imagen válido.';
-      setTimeout(() => this.errorMessage = '', 5000);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      this.errorMessage = 'La imagen debe ser menor a 5MB.';
-      setTimeout(() => this.errorMessage = '', 5000);
-      return;
-    }
-
-    console.log('Archivo seleccionado:', file);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.UserService.uploadProfileImage(formData).subscribe({
-      next: (response) => {
-        console.log('Respuesta del backend:', response);
-
-        let newImageUrl = response.profileimage;
-        if (!newImageUrl.startsWith('http')) {
-          newImageUrl = `http://localhost:5072/${newImageUrl}`;
-        }
-
-        const timestamp = new Date().getTime();
-        this.profileImage = `${newImageUrl}?v=${timestamp}`;
-
-        this.cdr.detectChanges();
-
-        console.log('Nueva imagen asignada:', this.profileImage);
-        this.successMessage = 'Imagen de perfil actualizada con éxito.';
-        setTimeout(() => this.successMessage = '', 5000);
-      },
-      error: (error) => {
-        console.error('Error al subir la imagen:', error);
-        this.errorMessage = 'Error al subir la imagen. Inténtalo de nuevo.';
-        setTimeout(() => this.errorMessage = '', 5000);
-      }
-    });
-  }
-
-  /**
-   * Maneja errores de carga de imagen
-   */
-  onImageError(event: Event): void {
-    const imgElement = event.target as HTMLImageElement;
-    console.warn(' Error al cargar imagen en DOM:', imgElement.src);
-
-    if (imgElement.src !== this.defaultProfileImage) {
-      console.log('Cambiando a imagen por defecto desde onImageError');
-      imgElement.src = this.defaultProfileImage;
-      this.profileImage = this.defaultProfileImage;
-      this.cdr.detectChanges();
-    } else {
-      console.error(' Error crítico: ni la imagen del usuario ni la por defecto se pueden cargar');
-    }
-  }
-
-  /**
-   * ==================== 11. UTILIDADES DE TRACKBY ====================
-   */
-
-  trackByNotification(index: number, notification: Notification): number {
-    return notification.id;
-  }
-
-  /**
-   * ==================== 12. LIMPIEZA DE RECURSOS ====================
-   */
-
-
-  ngOnDestroy(): void {
-    this.saveNotificationsToStorage();
-
-    // 🚀 PROTEGER EL USO DE WINDOW
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.removeEventListener('signalr-notification', this.handleNotification);
-      console.log('[NavComponent] ✅ Event listener removido correctamente');
-    } else {
-      console.log('[NavComponent] ⚠️ No se puede remover event listener - no estamos en navegador');
-    }
-
-    this.signalRService.disconnect();
-  }
-
 }

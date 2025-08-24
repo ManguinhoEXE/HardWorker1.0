@@ -6,7 +6,6 @@ export interface CompensatoryRequest {
     status?: string;
     userId?: number;
     currentHour?: string;
-    // Agregar propiedades faltantes
     firstName?: string;
     lastName?: string;
 }
@@ -16,18 +15,19 @@ export interface AdminCompensatoryRequest {
     firstName: string;
     lastName: string;
     reason: string;
-    from: string;
-    to: string;
+    from: Date | string;
+    to: Date | string;
     status: string;
     dynamicStatus: string;
-    currentHour: string;
+    currentHour: Date | string;
     userId: number;
     hoursRequested: number;
     userFullName: string;
-    daysFromRequest: number;
     isActive: boolean;
     isPending: boolean;
     isExpired: boolean;
+    requestDate: string;
+    timeRange: string;
 }
 
 export interface GlobalStatistics {

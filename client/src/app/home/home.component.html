@@ -42,22 +42,6 @@
                   <div class="user-info-admin">
                     <h5 class="user-name-admin">{{ user.firstName }} {{ user.lastName }}</h5>
                     <div class="user-stats-admin">
-                      <!-- Horas disponibles -->
-                      <span class="stat-item-admin">
-                        <i class="fas fa-clock"></i>
-                        {{ formatHours(user.availableHours) }}h disponibles
-                      </span>
-                      <!-- Compensatorios -->
-                      <span class="stat-item-admin">
-                        <i class="fas fa-file-alt"></i>
-                        {{ user.totalCompensatoryRequests }} compensatorios
-                      </span>
-                      <!-- Solicitudes pendientes -->
-                      <span class="stat-item-admin pending"
-                        *ngIf="user.pendingCompensatoryRequests > 0 || user.pendingHoursRequests > 0">
-                        <i class="fas fa-exclamation-circle"></i>
-                        {{ user.pendingCompensatoryRequests + user.pendingHoursRequests }} pendientes
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -100,7 +84,6 @@
                   <div class="stat-content-admin">
                     <h4>{{ globalStatistics.userStatistics.totalUsers }}</h4>
                     <p>Usuarios Totales</p>
-                    <small>{{ globalStatistics.userStatistics.adminUsers }} administradores</small>
                   </div>
                 </div>
 
@@ -218,7 +201,7 @@
             <span class="card-title text-white fw-bold">Horas Disponibles</span>
             <div class="d-flex align-items-center">
               <i class="bi bi-clock-history text-white fs-3 me-3"></i>
-              <span class="text-white fs-3 fw-bold">{{totalAcceptedHours}}</span>
+              <span class="text-white fs-3 fw-bold">{{availableHours}}</span>
             </div>
           </div>
         </div>

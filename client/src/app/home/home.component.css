@@ -30,12 +30,12 @@ input::placeholder {
   box-sizing: border-box;
 }
 
-.admin-section {
+.admin-section,
+.user-section {
   width: 100%;
 }
 
 .user-section {
-  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   display: flex;
@@ -44,46 +44,40 @@ input::placeholder {
 }
 
 .user-left-column {
-  flex: 2; /* Ocupa más espacio */
+  flex: 2;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
 .user-right-column {
-  flex: 1; /* Ocupa menos espacio */
+  flex: 1;
   min-width: 400px;
   min-height: 600px;
-
-}
-
-.user-hours-available {
-  display: flex;
-  justify-content: center;
 }
 
 /* ==================== 2. VISTA DE ADMINISTRADOR ==================== */
-/* Cards principales de administrador */
-.admin-users-card {
-  background: linear-gradient(100deg, #8e44ad 0%, #3f2b96 70%);
+.admin-users-card,
+.admin-stats-card {
   border: none;
   height: calc(100vh - 50px);
+}
+
+.admin-users-card {
+  background: linear-gradient(100deg, #8e44ad 0%, #3f2b96 70%);
 }
 
 .admin-stats-card {
   background-color: #2ca089;
-  border: none;
-  height: calc(100vh - 50px);
 }
 
-/* Contenedores con scroll */
-.users-scroll-container, .stats-scroll-container {
+.users-scroll-container,
+.stats-scroll-container {
   max-height: calc(100vh - 158px);
   overflow-y: auto;
   padding-right: 10px;
 }
 
-/* Cards de usuarios */
 .user-card-admin {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 15px;
@@ -98,10 +92,18 @@ input::placeholder {
   overflow: hidden;
 }
 
-.user-card-admin:hover {
+.user-card-admin:hover,
+.user-card-admin.selected {
   transform: translateY(-3px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.user-card-admin:hover {
   background: rgba(255, 255, 255, 1);
+}
+
+.user-card-admin.selected {
+  background: #f8f9fa;
 }
 
 .user-card-admin:active {
@@ -125,13 +127,6 @@ input::placeholder {
   opacity: 1;
 }
 
-.user-card-admin.selected {
-  background: #f8f9fa;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-}
-
-/* Avatar de usuario */
 .user-avatar-admin {
   width: 50px;
   height: 50px;
@@ -156,7 +151,6 @@ input::placeholder {
   font-size: 20px;
 }
 
-/* Información de usuario */
 .user-info-admin {
   flex: 1;
 }
@@ -166,41 +160,6 @@ input::placeholder {
   font-size: 16px;
   font-weight: 600;
   color: #2d3748;
-}
-
-.user-role-admin {
-  font-size: 12px;
-  color: #718096;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.user-role-admin.admin-role {
-  color: #e53e3e;
-  font-weight: 600;
-}
-
-.user-stats-admin {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-item-admin {
-  font-size: 11px;
-  color: #4a5568;
-  display: flex;
-  align-items: center;
-}
-
-.stat-item-admin i {
-  margin-right: 6px;
-  width: 12px;
-}
-
-.stat-item-admin.pending {
-  color: #e53e3e;
-  font-weight: 600;
 }
 
 /* ==================== 3. TARJETAS DE ESTADÍSTICAS ==================== */
@@ -251,7 +210,6 @@ input::placeholder {
   font-size: 12px;
 }
 
-/* Colores específicos para cada tipo de estadística */
 .users-stat-admin .stat-icon-admin {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
@@ -293,20 +251,9 @@ input::placeholder {
 }
 
 /* ==================== 4. SCROLLBARS PERSONALIZADOS ==================== */
-/* Scroll bars para admin */
 .users-scroll-container::-webkit-scrollbar,
 .stats-scroll-container::-webkit-scrollbar {
   width: 6px;
-}
-
-.users-scroll-container::-webkit-scrollbar-track {
-  background-color: #3f2b96;
-  border-radius: 3px;
-}
-
-.stats-scroll-container::-webkit-scrollbar-track {
-  background-color: #2ca089;
-  border-radius: 3px;
 }
 
 .users-scroll-container::-webkit-scrollbar-thumb,
@@ -320,9 +267,30 @@ input::placeholder {
   background: rgba(255, 255, 255, 0.6);
 }
 
-/* Scroll para modal */
-.user-modal-content::-webkit-scrollbar {
+.users-scroll-container::-webkit-scrollbar-track {
+  background-color: #3f2b96;
+  border-radius: 3px;
+}
+
+.stats-scroll-container::-webkit-scrollbar-track {
+  background-color: #2ca089;
+  border-radius: 3px;
+}
+
+.user-modal-content::-webkit-scrollbar,
+.user-modal-container::-webkit-scrollbar {
   width: 8px;
+}
+
+.user-modal-content::-webkit-scrollbar-thumb,
+.user-modal-container::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 4px;
+}
+
+.user-modal-content::-webkit-scrollbar-thumb:hover,
+.user-modal-container::-webkit-scrollbar-thumb:hover {
+  background: #0056b3;
 }
 
 .user-modal-content::-webkit-scrollbar-track {
@@ -330,17 +298,13 @@ input::placeholder {
   border-radius: 4px;
 }
 
-.user-modal-content::-webkit-scrollbar-thumb {
-  background: #007bff;
-  border-radius: 4px;
+.user-modal-container::-webkit-scrollbar-track {
+  background: #f1f1f105;
+  border-radius: 0px;
 }
 
-.user-modal-content::-webkit-scrollbar-thumb:hover {
-  background: #0056b3;
-}
-
-/* Scroll para historias */
-.history::-webkit-scrollbar {
+.history::-webkit-scrollbar,
+.historys::-webkit-scrollbar {
   width: 8px;
 }
 
@@ -357,10 +321,6 @@ input::placeholder {
   background-color: #2ca089;
 }
 
-.historys::-webkit-scrollbar {
-  width: 8px;
-}
-
 .historys::-webkit-scrollbar-thumb {
   background-color: #2b42c7;
   border-radius: 4px;
@@ -375,12 +335,6 @@ input::placeholder {
 }
 
 /* ==================== 5. VISTA DE USUARIO REGULAR ==================== */
-/* Panel de horas disponibles */
-.card-horas-disponibles {
-  max-height: 300px;
-  height: 100%;
-}
-
 .horas-disponibles {
   background-color: #8e44ad;
   padding: 10px;
@@ -388,13 +342,21 @@ input::placeholder {
   width: 90%;
 }
 
-/* Panel de solicitudes */
+.card-solicitar,
+.card-solicitarM {
+  background-color: #142066;
+  height: 100vh;
+  width: 100%;
+}
+
 .card-solicitar {
   max-height: 470px;
   max-width: 600px;
-  height: 100vh;
-  width: 100%;
-  background-color: #142066;
+}
+
+.card-solicitarM {
+  max-height: 460px;
+  max-width: 503px;
 }
 
 .historys {
@@ -405,7 +367,8 @@ input::placeholder {
   padding: 10px;
 }
 
-.card-history-solicitar {
+.card-history-solicitar,
+.card-history {
   background-color: rgba(0, 0, 0, 0.45);
 }
 
@@ -417,15 +380,21 @@ input::placeholder {
   font-size: 12px;
 }
 
-/* Registro de horas */
-.horas-card {
+.horas-card,
+.horas-cardM {
   background-color: #2ca089;
   color: white;
   border-radius: 20px;
   width: 100%;
-  min-height: 600px;
   height: 100%;
-  
+}
+
+.horas-card {
+  min-height: 600px;
+}
+
+.horas-cardM {
+  max-height: 600px;
 }
 
 .history {
@@ -436,13 +405,9 @@ input::placeholder {
   padding-right: 10px;
 }
 
-.card-history {
-  background-color: rgba(0, 0, 0, 0.45);
-}
-
 /* ==================== 6. COMPONENTES DE INTERFAZ ==================== */
-/* Badges y botones */
-.horas-badge {
+.horas-badge,
+.horas-badge2 {
   background-color: rgba(255, 255, 255, 0.5);
   color: #ffffff;
   padding: 5px 10px;
@@ -450,11 +415,7 @@ input::placeholder {
 }
 
 .horas-badge2 {
-  background-color: rgba(255, 255, 255, 0.5);
-  color: #ffffff;
   margin-top: 3.8rem;
-  padding: 5px 10px;
-  font-size: 14px;
 }
 
 .form-date {
@@ -462,7 +423,6 @@ input::placeholder {
   max-width: 210px;
 }
 
-/* Indicadores de estado */
 .status-dot {
   position: relative;
   top: 0.05rem;
@@ -492,7 +452,6 @@ input::placeholder {
 }
 
 /* ==================== 7. MODALES Y NOTIFICACIONES ==================== */
-/* Modal de notificación */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -554,7 +513,6 @@ input::placeholder {
   transform: scale(0.98);
 }
 
-/* Modal de detalles de usuario */
 .user-modal-backdrop {
   position: fixed;
   top: 0;
@@ -584,13 +542,16 @@ input::placeholder {
 }
 
 .user-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   padding: 20px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .user-modal-content {
@@ -598,40 +559,13 @@ input::placeholder {
   background-color: rgba(255, 255, 255, 0.947);
 }
 
-.user-modal-footer {
-  padding: 15px;
-  text-align: right;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Elementos de carga */
 .user-preview-loading {
   text-align: center;
   padding: 15px;
   margin-top: 10px;
 }
 
-.user-modal-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.user-modal-container::-webkit-scrollbar-track {
-  background: #f1f1f105;
-  border-radius: 0px;
-}
-
-.user-modal-container::-webkit-scrollbar-thumb {
-  background: #007bff;
-  border-radius: 4px;
-}
-
-.user-modal-container::-webkit-scrollbar-thumb:hover {
-  background: #0056b3;
-}
-
 /* ==================== 8. COMPONENTES DEL MODAL DE USUARIO ==================== */
-/* Modo solo lectura */
 .modal-readonly {
   opacity: 0.9;
   position: relative;
@@ -649,13 +583,12 @@ input::placeholder {
   border-radius: inherit;
 }
 
-/* Contenedores con altura máxima */
-.max-height-300, .max-height-Hours {
+.max-height-300,
+.max-height-Hours {
   max-height: 350px;
   overflow-y: auto;
 }
 
-/* Estadísticas en modal */
 .user-stats-summary {
   padding: 1.5rem;
   border-radius: 10px;
@@ -677,7 +610,6 @@ input::placeholder {
   text-align: center;
 }
 
-/* Colores específicos para cada tarjeta */
 .stat-mini-card:nth-child(1) {
   background: linear-gradient(145deg, #394a75, #059669);
 }
@@ -710,67 +642,4 @@ input::placeholder {
   opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-/* Tarjetas específicas para la vista modal */
-.card-solicitarM {
-  max-height: 460px;
-  max-width: 503px;
-  height: 100vh;
-  width: 100%;
-  background-color: #142066;
-}
-
-.horas-cardM {
-  background-color: #2ca089;
-  color: white;
-  border-radius: 20px;
-  width: 100%;
-  max-height: 600px;
-  height: 100%;
-}
-
-/* ==================== 9. BÚSQUEDA Y FILTROS ==================== */
-.search-container {
-  margin-top: -10px;
-  margin-bottom: 15px;
-}
-
-.search-input {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.search-input:focus {
-  background-color: rgba(255, 255, 255, 0.15);
-  color: white;
-  box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.input-group-text {
-  color: rgba(255, 255, 255, 0.6);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Mensaje de no resultados */
-.no-results-message {
-  text-align: center;
-  padding: 30px 15px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.no-results-message i {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  opacity: 0.8;
-}
-
-.no-results-message p {
-  margin: 0;
 }

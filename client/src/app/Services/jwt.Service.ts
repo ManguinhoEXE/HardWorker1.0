@@ -12,7 +12,6 @@ export class JwtService {
      */
     private readonly isBrowser: boolean;
 
-    // Claims posibles para diferentes propiedades del token
     private readonly roleClaims = [
         'role',
         'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
@@ -49,9 +48,6 @@ export class JwtService {
      * ==================== 4. OBTENCIÓN Y DECODIFICACIÓN DE TOKENS ====================
      */
 
-    /**
-     * Obtiene el token JWT desde las cookies
-     */
     getTokenFromCookies(): string | null {
         if (!this.isBrowser) {
             return null;
@@ -67,9 +63,6 @@ export class JwtService {
         return null;
     }
 
-    /**
-     * Obtiene el valor de una cookie específica
-     */
     private getCookieValue(name: string): string | null {
         if (!this.isBrowser) {
             return null;
@@ -82,16 +75,13 @@ export class JwtService {
             cookie = cookie.trim();
             if (cookie.startsWith(cookieName)) {
                 const value = cookie.substring(cookieName.length);
-                return value || null; // Evitar strings vacíos
+                return value || null;
             }
         }
 
         return null;
     }
 
-    /**
-     * Decodifica un JWT token
-     */
     decodeToken(token: string): DecodedToken | null {
         if (!token || typeof token !== 'string') {
             return null;
@@ -111,7 +101,6 @@ export class JwtService {
             const decodedPayload = this.base64UrlDecode(payload);
             const parsedPayload = JSON.parse(decodedPayload);
 
-            // Validar que el payload sea un objeto
             if (typeof parsedPayload !== 'object' || parsedPayload === null) {
                 throw new Error('Payload del token JWT no es un objeto válido');
             }
@@ -123,18 +112,13 @@ export class JwtService {
         }
     }
 
-    /**
-     * Decodifica una cadena base64url (usado en JWT)
-     */
     private base64UrlDecode(str: string): string {
         if (!str) {
             throw new Error('String base64url está vacío');
         }
 
-        // Convertir base64url a base64
         let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
 
-        // Añadir padding si es necesario
         while (base64.length % 4) {
             base64 += '=';
         }
@@ -151,9 +135,6 @@ export class JwtService {
      * ==================== 5. VALIDACIÓN DE TOKENS ====================
      */
 
-    /**
-     * Verifica si el token es válido (no expirado)
-     */
     isTokenValid(token: string): boolean {
         if (!token) {
             return false;
@@ -163,9 +144,6 @@ export class JwtService {
         return decodedToken ? this.isTokenNotExpired(decodedToken) : false;
     }
 
-    /**
-     * Verifica si el token decodificado no ha expirado
-     */
     isTokenNotExpired(decodedToken: DecodedToken): boolean {
         if (!decodedToken.exp) {
             console.warn('Token sin fecha de expiración detectado');
@@ -181,10 +159,7 @@ export class JwtService {
 
         return isValid;
     }
-
-    /**
-     * Verifica si el token existe y es válido
-     */
+    
     isAuthenticated(): boolean {
         const token = this.getTokenFromCookies();
         return token ? this.isTokenValid(token) : false;
@@ -194,9 +169,6 @@ export class JwtService {
      * ==================== 6. EXTRACCIÓN DE CLAIMS ====================
      */
 
-    /**
-     * Extrae un claim específico del token
-     */
     getClaim<T>(token: string, claimName: string): T | null {
         const decodedToken = this.decodeToken(token);
         if (!decodedToken || !claimName) {
@@ -207,9 +179,6 @@ export class JwtService {
         return claimValue !== undefined ? (claimValue as T) : null;
     }
 
-    /**
-     * Extrae el rol del token usando múltiples claims posibles
-     */
     getRoleFromToken(token: string): string | null {
         const decodedToken = this.decodeToken(token);
         if (!decodedToken) {
@@ -219,9 +188,6 @@ export class JwtService {
         return this.extractClaimFromToken(decodedToken, this.roleClaims, 'string');
     }
 
-    /**
-     * Extrae el ID del usuario del token
-     */
     getUserIdFromToken(token: string): string | number | null {
         const decodedToken = this.decodeToken(token);
         if (!decodedToken) {
@@ -231,9 +197,6 @@ export class JwtService {
         return this.extractClaimFromToken(decodedToken, this.userIdClaims);
     }
 
-    /**
-     * Extrae el nombre de usuario del token
-     */
     getUsernameFromToken(token: string): string | null {
         const decodedToken = this.decodeToken(token);
         if (!decodedToken) {
@@ -243,9 +206,6 @@ export class JwtService {
         return this.extractClaimFromToken(decodedToken, this.usernameClaims, 'string');
     }
 
-    /**
-     * Método auxiliar para extraer claims con múltiples nombres posibles
-     */
     private extractClaimFromToken(
         decodedToken: DecodedToken, 
         claimNames: string[], 
@@ -267,9 +227,6 @@ export class JwtService {
      * ==================== 7. VERIFICACIÓN DE ROLES ====================
      */
 
-    /**
-     * Verifica si el token tiene un rol específico
-     */
     hasRole(token: string, role: string): boolean {
         if (!token || !role) {
             return false;
@@ -279,9 +236,7 @@ export class JwtService {
         return tokenRole === role;
     }
 
-    /**
-     * Verifica si el usuario es administrador
-     */
+
     isAdmin(token: string): boolean {
         return this.hasRole(token, 'Admin');
     }
@@ -290,9 +245,6 @@ export class JwtService {
      * ==================== 8. GESTIÓN DE FECHAS Y EXPIRACIÓN ====================
      */
 
-    /**
-     * Obtiene la fecha de expiración del token
-     */
     getTokenExpirationDate(token: string): Date | null {
         const decodedToken = this.decodeToken(token);
         if (!decodedToken?.exp) {
@@ -302,9 +254,6 @@ export class JwtService {
         return new Date(decodedToken.exp * 1000);
     }
 
-    /**
-     * Obtiene el tiempo restante hasta la expiración del token (en segundos)
-     */
     getTimeUntilExpiry(token: string): number | null {
         const expirationDate = this.getTokenExpirationDate(token);
         if (!expirationDate) {
@@ -315,9 +264,6 @@ export class JwtService {
         return Math.max(0, timeLeft);
     }
 
-    /**
-     * Verifica si el token expirará pronto (dentro de X minutos)
-     */
     willExpireSoon(token: string, minutesThreshold: number = 5): boolean {
         const timeLeft = this.getTimeUntilExpiry(token);
         if (timeLeft === null) {
@@ -328,13 +274,7 @@ export class JwtService {
         return timeLeft <= thresholdInSeconds;
     }
 
-    /**
-     * ==================== 9. UTILIDADES DE DEBUGGING ====================
-     */
 
-    /**
-     * Obtiene información completa del token para debugging
-     */
     getTokenInfo(token: string): any {
         if (!token) {
             return { error: 'No token provided' };

@@ -1,0 +1,379 @@
+<div class="super-admin-container">
+
+    <!-- ==================== CONTENEDOR PRINCIPAL ESTILO ADMIN ==================== -->
+    <div class="admin-section">
+        <div class="container-fluid">
+            <div class="row">
+
+                <!-- ==================== PANEL DE USUARIOS (ESTILO ADMIN) ==================== -->
+                <div class="col-12">
+                    <div class="card admin-users-card rounded-5 shadow">
+                        <div class="card-body">
+                            <!-- Título con contador -->
+                            <h3 class="card-title text-center mb-4 mt-3 fw-bold text-white">
+                                <i class="fas fa-users-cog me-2"></i>
+                                Gestión de Usuarios
+                            </h3>
+
+                            <!-- Barra de búsqueda -->
+                            <div class="search-container mb-4">
+                                <div class="input-group">
+                                    <input type="text" class="form-control search-input"
+                                        placeholder="Buscar por usuario..." [(ngModel)]="searchTerm"
+                                        (input)="filterUsers()">
+                                </div>
+                            </div>
+
+                            <!-- Estadísticas rápidas -->
+                            <div class="stats-row mb-4">
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ users.length }}</div>
+                                    <div class="stat-label">Total</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ getUsersByRole('Admin') }}</div>
+                                    <div class="stat-label">Admin</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ getUsersByRole('User') }}</div>
+                                    <div class="stat-label">Users</div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de usuarios -->
+                            <div class="users-scroll-container">
+
+                                <!-- Indicador de carga -->
+                                <div *ngIf="isLoadingUsers" class="text-center py-5">
+                                    <div class="spinner-border text-light" role="status"></div>
+                                    <p class="mt-2 text-light">Cargando usuarios...</p>
+                                </div>
+
+                                <!-- Mensaje cuando no hay usuarios -->
+                                <div *ngIf="!isLoadingUsers && filteredUsers.length === 0"
+                                    class="text-center text-white py-5">
+                                    <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                                    <h4 *ngIf="searchTerm">No se encontraron usuarios</h4>
+                                    <h4 *ngIf="!searchTerm">No hay usuarios registrados</h4>
+                                    <p class="opacity-75" *ngIf="searchTerm">
+                                        No se encontraron usuarios con el término "{{ searchTerm }}"
+                                    </p>
+                                    <p class="opacity-75" *ngIf="!searchTerm">
+                                        Comienza creando el primer usuario del sistema
+                                    </p>
+                                </div>
+
+                                <!-- Cards de usuarios -->
+                                <div class="users-grid" *ngIf="!isLoadingUsers && filteredUsers.length > 0">
+                                    <div class="user-card-admin"
+                                        *ngFor="let user of filteredUsers; trackBy: trackByUserId"
+                                        [class.current-user]="user.id === currentUserId"
+                                        (click)="viewUserDetails(user)">
+
+                                        <div class="user-actions">
+                                            <button class="btn-edit-user"
+                                                (click)="editUser(user); $event.stopPropagation()"
+                                                [disabled]="!canEditUser(user)" title="Editar usuario">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Avatar del usuario -->
+                                        <div class="user-avatar-container">
+                                            <div class="user-avatar-admin">
+                                                <img *ngIf="user.profileImage; else defaultAvatar"
+                                                    [src]="user.profileImage" [alt]="user.firstName"
+                                                    class="avatar-image">
+                                                <ng-template #defaultAvatar>
+                                                    <i class="fas fa-user-circle avatar-icon"></i>
+                                                </ng-template>
+                                            </div>
+
+                                            <!-- Indicador de usuario actual -->
+                                            <div *ngIf="user.id === currentUserId" class="current-user-indicator">
+                                                <i class="fas fa-crown"></i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Información del usuario -->
+                                        <div class="user-info-section">
+                                            <div class="user-main-info">
+                                                <h5 class="user-name">{{ user.firstName }} {{ user.lastName }}</h5>
+                                                <p class="user-username">{{ user.username }}</p>
+                                            </div>
+
+                                            <div class="user-role-container">
+                                                <span class="user-role-badge" [ngClass]="getRoleBadgeClass(user.role)">
+                                                    <i class="fas" [ngClass]="{
+                                                        'fa-crown': user.role === 'Super',
+                                                        'fa-shield-alt': user.role === 'Admin',
+                                                        'fa-user': user.role === 'User'
+                                                    }"></i>
+                                                    {{ user.role }}
+                                                </span>
+                                            </div>
+
+                                            <div class="user-meta-info">
+                                                <div class="meta-item">
+                                                    <i class="fas fa-hashtag"></i>
+                                                    <span>ID: {{ user.id }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MENSAJES ==================== -->
+    <div class="messages-overlay" *ngIf="successMessage || errorMessage">
+        <div class="alert alert-success" *ngIf="successMessage">
+            <i class="fas fa-check-circle"></i>
+            {{ successMessage }}
+        </div>
+
+        <div class="alert alert-error" *ngIf="errorMessage">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ errorMessage }}
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE DETALLES DEL USUARIO ==================== -->
+    <div *ngIf="showUserModal && selectedUser" class="user-modal-backdrop" (click)="closeUserModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
+            <!-- Cabecera del modal -->
+            <div class="user-modal-header">
+                <h3>
+                    <i class="fas fa-user-circle me-2"></i>
+                    {{ selectedUser.firstName }} {{ selectedUser.lastName }}
+                </h3>
+                <button class="btn-close" (click)="closeUserModal()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <!-- Contenido del modal -->
+            <div class="user-modal-content">
+                <div class="user-detail-grid">
+                    <div class="detail-item">
+                        <label><i class="fas fa-hashtag"></i> ID:</label>
+                        <span>#{{ selectedUser.id }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fas fa-user"></i> Usuario:</label>
+                        <span>{{ selectedUser.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fas fa-id-card"></i> Nombre:</label>
+                        <span>{{ selectedUser.firstName }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fas fa-id-card"></i> Apellido:</label>
+                        <span>{{ selectedUser.lastName }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fas fa-user-tag"></i> Rol:</label>
+                        <span class="role-badge-small" [ngClass]="getRoleBadgeClass(selectedUser.role)">
+                            {{ selectedUser.role }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer del modal -->
+            <div class="user-modal-footer d-flex justify-content-center align-content-center">
+                <button class="btn btn-primary" (click)="editFromModal()" [disabled]="!canEditUser(selectedUser)">
+                    Cancelar
+                </button>
+                <button class="btn btn-danger" (click)="confirmDeleteFromModal()"
+                    [disabled]="!canDeleteUser(selectedUser)">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL EDITAR USUARIO ==================== -->
+    <div *ngIf="showEditModal && editingUser" class="modal-overlay" (click)="closeEditModal()">
+        <div class="modal-content edit-modal" (click)="$event.stopPropagation()">
+            <!-- Cabecera -->
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-user-edit me-2"></i>
+                    Editar Usuario: {{ editingUser.username }}
+                </h3>
+                <button class="btn-close" (click)="closeEditModal()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <!-- Contenido -->
+            <div class="modal-body">
+                <form class="edit-user-form" #editForm="ngForm">
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label for="editUsername">
+                            <i class="bi bi-person-badge-fill"></i>
+                            Usuario
+                        </label>
+                        <input type="text" 
+                               id="editUsername" 
+                               name="username" 
+                               class="form-control"
+                               [(ngModel)]="editUserForm.username" 
+                               placeholder="Ingrese nombre de usuario"
+                               [disabled]="isEditingUser" 
+                               required>
+                    </div>
+
+                    <!-- Nombre -->
+                    <div class="form-group">
+                        <label for="editFirstName">
+                            <i class="bi bi-person-bounding-box"></i>
+                            Primer Nombre
+                        </label>
+                        <input type="text" 
+                               id="editFirstName" 
+                               name="firstName" 
+                               class="form-control"
+                               [(ngModel)]="editUserForm.firstName" 
+                               placeholder="Ingrese nombre"
+                               [disabled]="isEditingUser" 
+                               required>
+                    </div>
+
+                    <!-- Apellido -->
+                    <div class="form-group">
+                        <label for="editLastName">
+                            <i class="bi bi-person-bounding-box"></i>
+                            Primer Apellido
+                        </label>
+                        <input type="text" 
+                               id="editLastName" 
+                               name="lastName" 
+                               class="form-control"
+                               [(ngModel)]="editUserForm.lastName" 
+                               placeholder="Ingrese apellido"
+                               [disabled]="isEditingUser" 
+                               required>
+                    </div>
+
+                    <!-- Rol -->
+                    <div class="form-group">
+                        <label for="editRole">
+                            <i class="bi bi-person-rolodex"></i>
+                            Rol
+                        </label>
+                        <select id="editRole" 
+                                name="role" 
+                                class="form-control" 
+                                [(ngModel)]="editUserForm.role"
+                                [disabled]="isEditingUser" 
+                                required>
+                            <option value="">Seleccionar rol</option>
+                            <option value="User">Usuario</option>
+                            <option value="Admin">Administrador</option>
+                            <option value="Super">Super Administrador</option>
+                        </select>
+                    </div>
+
+                    <!-- Contraseña -->
+                    <div class="form-group">
+                        <label>
+                            <i class="bi bi-incognito"></i>
+                            Cambiar Contraseña
+                        </label>
+                        <input type="password" 
+                               name="password" 
+                               class="form-control" 
+                               [(ngModel)]="editUserForm.password"
+                               (input)="onEditPasswordChange()" 
+                               placeholder="Nueva contraseña (opcional)"
+                               [disabled]="isEditingUser">
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-actions">
+                <button class="btn btn-secondary" (click)="closeEditModal()" [disabled]="isEditingUser">
+                    Cancelar
+                </button>
+                <button class="btn btn-primary" (click)="confirmEditUser()"
+                    [disabled]="!isEditFormValid() || isEditingUser">
+                    <i class="fas fa-spinner fa-spin" *ngIf="isEditingUser"></i>
+                    <i class="fas fa-save" *ngIf="!isEditingUser"></i>
+                    {{ isEditingUser ? 'Guardando...' : 'Guardar Cambios' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL ELIMINAR USUARIO ==================== -->
+    <div *ngIf="showDeleteModal" class="modal-overlay" (click)="closeDeleteModal()">
+        <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Confirmar Eliminación
+                </h3>
+                <button class="btn-close" (click)="closeDeleteModal()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="warning-icon">
+                    <i class="fas fa-user-times"></i>
+                </div>
+
+                <p class="confirmation-text">
+                    ¿Estás seguro de que deseas eliminar este usuario?
+                </p>
+
+                <div class="user-details" *ngIf="selectedUserForDeletion">
+                    <div class="user-card">
+                        <div class="user-avatar-large">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="user-info-detailed">
+                            <h4>{{ selectedUserForDeletion.firstName }} {{ selectedUserForDeletion.lastName }}</h4>
+                            <p class="username">{{ selectedUserForDeletion.username }}</p>
+                            <span class="role-badge" [ngClass]="getRoleBadgeClass(selectedUserForDeletion.role)">
+                                <i class="fas" [ngClass]="{
+                                    'fa-crown': selectedUserForDeletion.role === 'Super',
+                                    'fa-shield-alt': selectedUserForDeletion.role === 'Admin',
+                                    'fa-user': selectedUserForDeletion.role === 'User'
+                                }"></i>
+                                {{ selectedUserForDeletion.role }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p><strong>¡Atención!</strong> Esta acción no se puede deshacer.</p>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="isDeletingUser">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </button>
+                <button class="btn btn-danger" (click)="confirmDeleteUser()" [disabled]="isDeletingUser">
+                    <i class="fas fa-spinner fa-spin" *ngIf="isDeletingUser"></i>
+                    <i class="fas fa-trash-alt" *ngIf="!isDeletingUser"></i>
+                    {{ isDeletingUser ? 'Eliminando...' : 'Eliminar' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
