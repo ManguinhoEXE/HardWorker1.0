@@ -15,25 +15,24 @@ el bienestar del equipo.
 - Persistencia y separación de servicios
 
 ## Instalación
-1. Clona el repositorio:
+1. Clonar repositorio:
    ```bash
    git clone https://github.com/usuario/proyecto.git
    ```
-2. Instala las dependencias:
-   Backend (.NET)
+2. Instalar dependencias:
+   Frontend (Angular)
    ```bash
    npm install
    ```
-   Frontend (Angular)
+   Backend (.NET)
    ```bash
    Backend (.NET)
    dotnet restore
    ```
-4. Configura las variables de entorno
-   ```bash
+4. Configurar variables de entorno:
    Backend (.NET)
-   `appsettings.json` en la carpeta `/Server`:
-   {
+   ```json
+{
   "Jwt": {
     "Issuer": "TU_ISSUER_AQUI",
     "Audience": "TU_AUDIENCE_AQUI",
@@ -53,7 +52,7 @@ el bienestar del equipo.
 ```
 
 ## Uso
-Ejecutar la aplicación:
+Ejecutar aplicación:
 Frontend (Angular)
 ```bash
 ng serve
@@ -62,6 +61,7 @@ Backend (.NET)
 ```bash
 dotnet run
 ```
+
 ## Estructura del Proyecto
 ```bash
 Server/
