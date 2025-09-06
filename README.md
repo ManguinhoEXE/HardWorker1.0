@@ -29,9 +29,9 @@ el bienestar del equipo.
    Backend (.NET)
    dotnet restore
    ```
-4. Configurar variables de entorno:
-   Backend (.NET)
-   ```json
+4. Configurar variables de entorno: Backend (.NET)
+   
+  ```json
 {
   "Jwt": {
     "Issuer": "TU_ISSUER_AQUI",
@@ -52,6 +52,7 @@ el bienestar del equipo.
 ```
 
 ## Uso
+
 Ejecutar aplicación:
 Frontend (Angular)
 ```bash
