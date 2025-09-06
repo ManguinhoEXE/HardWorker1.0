@@ -20,15 +20,17 @@ el bienestar del equipo.
    git clone https://github.com/usuario/proyecto.git
    ```
 2. Instala las dependencias:
-   ----
-   Frontend (Angular)
+   Backend (.NET)
+   ```bash
    npm install
-   ----
+   ```
+   Frontend (Angular)
+   ```bash
    Backend (.NET)
    dotnet restore
-   ----
+   ```
 4. Configura las variables de entorno
-   ----
+   ```bash
    Backend (.NET)
    `appsettings.json` en la carpeta `/Server`:
    {
@@ -48,19 +50,20 @@ el bienestar del equipo.
     "SmtpPort": "587"
   }
 }
-----
+```
 
 ## Uso
-Explica cómo ejecutar la aplicación:
-----
+Ejecutar la aplicación:
 Frontend (Angular)
+```bash
 ng serve
-----
-Backend (.NET)
-dotnet run
-----
-## Estructura del Proyecto
 ```
+Backend (.NET)
+```bash
+dotnet run
+```
+## Estructura del Proyecto
+```bash
 Server/
 ├── bin/
 ├── Controller/
@@ -78,7 +81,7 @@ Server/
 ├── Server.csproj
 ├── Server.http
 ```
-```
+```bash
   client/
 ├── .vscode/
 ├── public/
