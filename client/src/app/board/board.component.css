@@ -10,7 +10,8 @@
     color: #e0e0e0;
     padding: 25px;
     border-radius: 15px;
-    max-height: 620px;
+    height: 100vh;
+    max-height: calc(100vh - 75px);
     max-width: 100%;
     margin: 0 auto;
 }
@@ -53,13 +54,13 @@
 .admin-table-container {
     overflow-x: auto;
     background: #fffffff2;
-    max-height: 250px;
+    max-height: calc(100vh - 460px);
     min-width: 600px;
 }
 
 .user-table-container {
     background: rgba(255, 255, 255, 0.95);
-    max-height: 185px;
+    max-height: calc(100vh - 500px);
     overflow-x: hidden;
     scrollbar-width: none;
 }

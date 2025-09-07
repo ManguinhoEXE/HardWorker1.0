@@ -1,8 +1,9 @@
 /* ==================== 1. ESTRUCTURA PRINCIPAL ==================== */
 .sidebar {
-  width: 250px;
+  width: 100vw;
   height: 100vh;
   padding: 20px;
+  max-width: calc(300px - 50px);
   border-radius: 0 105px 35px 0;
   background: linear-gradient(#142066, #01ACA9);
 }
@@ -11,8 +12,10 @@
 .profile-image-container {
   margin-top: 3rem;
   position: relative;
-  width: 125px;
-  height: 125px;
+  width: 100vh;
+  height: 100vw;
+  max-width: calc(250px - 100px);
+  max-height: calc(250px - 100px);
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
@@ -44,7 +47,7 @@
   border-radius: 0.5rem;
   max-width: 200px;
   width: 100vw;
-  max-height: 290px;
+  max-height: calc(100vh - 400px);
   height: 100vh;
   overflow-y: auto;
   -ms-overflow-style: none;
