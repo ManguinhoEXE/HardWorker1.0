@@ -26,7 +26,6 @@ input::placeholder {
 .home-container {
   width: 100%;
   min-height: 100vh;
-  padding: 10px;
   box-sizing: border-box;
 }
 
@@ -52,7 +51,7 @@ input::placeholder {
 
 .user-right-column {
   flex: 1;
-  min-width: 400px;
+  min-width: 43%;
   min-height: 600px;
 }
 
@@ -350,8 +349,8 @@ input::placeholder {
 }
 
 .card-solicitar {
-  max-height: 470px;
-  max-width: 600px;
+  max-height: calc(100vh - 200px);
+  max-width: calc(100% - 20px);
 }
 
 .card-solicitarM {
@@ -360,7 +359,7 @@ input::placeholder {
 }
 
 .historys {
-  max-height: 200px;
+  max-height: calc(100vh - 480px);
   max-width: 90%;
   margin: 0 auto;
   overflow-y: auto;
@@ -390,7 +389,7 @@ input::placeholder {
 }
 
 .horas-card {
-  min-height: 600px;
+  min-height: calc(100vh - 70px);
 }
 
 .horas-cardM {
@@ -398,7 +397,7 @@ input::placeholder {
 }
 
 .history {
-  max-height: 360px;
+  max-height: calc(100vh - 320px);
   height: 100%;
   width: 100%;
   overflow-y: auto;
